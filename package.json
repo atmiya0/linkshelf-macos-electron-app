@@ -1,0 +1,69 @@
+{
+  "name": "linkshelf-menubar-macos",
+  "version": "1.0.0",
+  "description": "macOS menu bar app for storing and copying links and text snippets",
+  "main": "electron/main.js",
+  "scripts": {
+    "start": "concurrently \"npm run start:react\" \"wait-on http://localhost:3000 && npm run start:electron\"",
+    "start:react": "vite",
+    "start:electron": "env -u ELECTRON_RUN_AS_NODE VITE_DEV_SERVER_URL=http://localhost:3000 npx electron electron/main.js",
+    "dev": "npm run start",
+    "electron": "env -u ELECTRON_RUN_AS_NODE npx electron electron/main.js",
+    "build": "vite build",
+    "build:electron": "tsc --project tsconfig.electron.json",
+    "package": "npm run build && npm run build:electron && electron-builder",
+    "lint": "eslint src electron --ext .ts,.tsx",
+    "lint:fix": "eslint src electron --ext .ts,.tsx --fix"
+  },
+  "build": {
+    "appId": "com.linkshelf.menubar",
+    "productName": "Linkshelf",
+    "mac": {
+      "category": "public.app-category.productivity",
+      "target": "dmg"
+    },
+    "files": [
+      "dist/**/*",
+      "electron-dist/**/*",
+      "package.json"
+    ],
+    "extraMetadata": {
+      "main": "electron-dist/main.js"
+    }
+  },
+  "keywords": [
+    "electron",
+    "menubar",
+    "clipboard",
+    "productivity"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/electron": "1.4.38",
+    "@types/node": "^20.10.0",
+    "@types/react": "^18.2.42",
+    "@types/react-dom": "^18.2.17",
+    "@typescript-eslint/eslint-plugin": "8.55.0",
+    "@typescript-eslint/parser": "8.55.0",
+    "@vitejs/plugin-react": "^4.2.1",
+    "concurrently": "^8.2.2",
+    "electron": "28.3.3",
+    "electron-builder": "^24.9.1",
+    "eslint": "9.39.2",
+    "eslint-plugin-react": "7.37.5",
+    "eslint-plugin-react-hooks": "7.0.1",
+    "ts-node": "10.9.2",
+    "typescript": "^5.3.3",
+    "vite": "^5.0.7",
+    "wait-on": "^7.2.0"
+  },
+  "dependencies": {
+    "@fontsource/google-sans": "5.2.1",
+    "electron-store": "^8.1.0",
+    "lucide-react": "0.563.0",
+    "menubar": "9.5.2",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0"
+  }
+}
