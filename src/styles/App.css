@@ -55,7 +55,7 @@
   --app-accent-soft: rgba(255, 255, 255, 0.28);
   --danger: #ff7a7a;
   --danger-soft: rgba(255, 122, 122, 0.14);
-  --success: #4ade80;
+  --success: #66c59a;
   --window-border: transparent;
   --window-shadow: 0 18px 38px rgba(0, 0, 0, 0.55);
   --header-divider: rgba(255, 255, 255, 0.08);
@@ -64,15 +64,15 @@
   --item-row-border: rgba(255, 255, 255, 0.1);
   --item-row-bg: #2a2a2a;
   --item-kind-border: transparent;
-  --item-kind-link-color: #8cc8ff;
+  --item-kind-link-color: #5e95dc;
   --item-kind-link-border: transparent;
-  --item-kind-link-bg: rgba(140, 200, 255, 0.16);
-  --item-kind-text-color: #ffd08a;
-  --item-kind-text-bg: rgba(255, 208, 138, 0.14);
-  --link-text: #8cc8ff;
+  --item-kind-link-bg: rgba(94, 149, 220, 0.2);
+  --item-kind-text-color: #e8bb73;
+  --item-kind-text-bg: rgba(232, 187, 115, 0.22);
+  --link-text: #5e95dc;
   --copy-bg: #3a3a3a;
   --success-border: transparent;
-  --success-bg: rgba(74, 222, 128, 0.16);
+  --success-bg: rgba(102, 197, 154, 0.2);
   --danger-border: transparent;
   --empty-bg: rgba(34, 34, 34, 0.75);
   --footer-divider: transparent;
@@ -82,8 +82,10 @@
   --btn-primary-active: #454545;
   --overlay-bg: rgba(0, 0, 0, 0.7);
   --modal-shadow: 0 24px 48px rgba(0, 0, 0, 0.6);
-  --toast-bg: #14532d;
-  --toast-text: #ffffff;
+  --toast-bg: #2b5a49;
+  --toast-text: #edf8f3;
+  --toast-border: rgba(133, 189, 164, 0.3);
+  --toast-icon: #a9dfc7;
 }
 
 [data-theme='dark'] {
@@ -1053,7 +1055,7 @@ textarea {
   background: var(--surface-pressed);
 }
 
-form {
+.modal-content form {
   padding: 14px;
 }
 
@@ -1153,7 +1155,7 @@ form {
 
 .toast-container {
   position: fixed;
-  bottom: 60px;
+  bottom: 70px;
   left: 50%;
   transform: translateX(-50%) translateY(24px) scale(0.9);
   z-index: 2000;
@@ -1172,6 +1174,7 @@ form {
 .toast-content {
   background: var(--toast-bg);
   color: var(--toast-text);
+  border: 1px solid var(--toast-border);
   padding: 8px 16px;
   border-radius: 999px;
   display: flex;
@@ -1179,7 +1182,7 @@ form {
   gap: 10px;
   font-size: var(--fs-md);
   font-weight: 500;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+  box-shadow: 0 10px 24px rgba(12, 31, 24, 0.4);
   max-width: 320px;
   white-space: nowrap;
 }
@@ -1189,5 +1192,5 @@ form {
 }
 
 .toast-icon {
-  color: inherit;
+  color: var(--toast-icon);
 }

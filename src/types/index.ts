@@ -53,12 +53,8 @@ export interface AppPreferences {
  */
 export const DEFAULT_MODES: Mode[] = [
   {
-    id: 'job-apps',
-    name: 'Job Applications',
-    sections: [
-      { id: 'ja-1', name: 'Links', order: 0 },
-      { id: 'ja-2', name: 'Resume', order: 1 },
-    ],
+    id: 'linkshelf',
+    name: 'Linkshelf',
     items: [
       {
         id: '1',
@@ -67,7 +63,6 @@ export const DEFAULT_MODES: Mode[] = [
         type: 'link',
         createdAt: Date.now(),
         updatedAt: Date.now(),
-        sectionId: 'ja-1',
         order: 0,
       },
       {
@@ -77,48 +72,16 @@ export const DEFAULT_MODES: Mode[] = [
         type: 'link',
         createdAt: Date.now(),
         updatedAt: Date.now(),
-        sectionId: 'ja-1',
         order: 1,
       },
       {
         id: '3',
-        label: 'Standard Resume',
-        value: 'https://drive.google.com/resume.pdf',
-        type: 'link',
-        createdAt: Date.now(),
-        updatedAt: Date.now(),
-        sectionId: 'ja-2',
-        order: 0,
-      },
-    ],
-  },
-  {
-    id: 'emails',
-    name: 'Emails',
-    sections: [
-      { id: 'em-1', name: 'Signatures', order: 0 },
-      { id: 'em-2', name: 'Templates', order: 1 },
-    ],
-    items: [
-      {
-        id: '4',
-        label: 'Work Signature',
-        value: 'Best regards,\nJohn Doe | Software Engineer',
+        label: 'Intro Message',
+        value: 'Hi there, thanks for reaching out. I will get back to you shortly.',
         type: 'text',
         createdAt: Date.now(),
         updatedAt: Date.now(),
-        sectionId: 'em-1',
-        order: 0,
-      },
-      {
-        id: '5',
-        label: 'Meeting Follow-up',
-        value: "Hi,\n\nThanks for the great meeting earlier! Let's connect soon.",
-        type: 'text',
-        createdAt: Date.now(),
-        updatedAt: Date.now(),
-        sectionId: 'em-2',
-        order: 0,
+        order: 2,
       },
     ],
   },

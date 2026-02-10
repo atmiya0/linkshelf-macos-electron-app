@@ -163,7 +163,7 @@ const PREFERENCES_KEY = 'linkshelf-preferences';
 export const DEFAULT_THEME: ThemeMode = 'dark';
 export const DEFAULT_ALWAYS_ON_TOP = true;
 export const DEFAULT_WINDOW_HEIGHT = 520;
-export const MIN_WINDOW_HEIGHT = 120;
+export const MIN_WINDOW_HEIGHT = 420;
 export const MAX_WINDOW_HEIGHT = 900;
 
 function clampWindowHeight(height: number): number {
@@ -640,9 +640,9 @@ export async function reorderSections(data: AppData, sectionIds: string[]): Prom
         const section = sectionsMap.get(id);
         if (!section) return null;
         return { ...section, order: index };
-      }).filter(s => s !== null);
+      }).filter((section): section is NonNullable<typeof section> => section !== null);
 
-      return { ...mode, sections: newSections as any };
+      return { ...mode, sections: newSections };
     }
     return mode;
   });

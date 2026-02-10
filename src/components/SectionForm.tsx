@@ -4,7 +4,6 @@ import { Button } from "@/components/ui/button";
 import {
     Dialog,
     DialogContent,
-    DialogDescription,
     DialogHeader,
     DialogTitle,
     DialogFooter,
@@ -46,12 +45,9 @@ export const SectionForm: React.FC<SectionFormProps> = ({ onSave, onCancel }) =>
             <DialogContent className="max-w-[360px] p-0">
                 <DialogHeader>
                     <DialogTitle>New Section</DialogTitle>
-                    <DialogDescription>
-                        Group related items together.
-                    </DialogDescription>
                 </DialogHeader>
                 <form onSubmit={handleSubmit} onKeyDown={handleFormKeyDown}>
-                    <div className="grid gap-4 border-y border-[var(--item-row-border)] px-5 py-4">
+                    <div className="grid gap-4 px-5 py-4">
                         <div className="grid gap-2">
                             <Label htmlFor="name" className="text-xs font-semibold text-text">Section Name</Label>
                             <Input
@@ -68,13 +64,7 @@ export const SectionForm: React.FC<SectionFormProps> = ({ onSave, onCancel }) =>
                             {error && <p className="text-[11px] text-danger">{error}</p>}
                         </div>
                     </div>
-                    <DialogFooter className="justify-between">
-                        <p className="text-text-soft text-[10px] font-semibold tracking-wider uppercase flex items-center gap-1.5">
-                            <kbd className="inline-flex h-5 items-center gap-0.5 rounded bg-surface-subtle px-1.5 font-mono text-[10px] font-medium text-text-muted">
-                                <span className="text-xs">⌘</span>↵
-                            </kbd>
-                            save
-                        </p>
+                    <DialogFooter>
                         <div className="flex gap-2">
                             <Button type="button" variant="ghost" className="h-9 rounded-lg bg-surface-subtle text-text-muted hover:bg-surface-hover hover:text-text" onClick={onCancel}>
                                 Cancel

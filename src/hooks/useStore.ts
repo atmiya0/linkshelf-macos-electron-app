@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { AppData, LinkshelfItem } from '../types';
 import {
   initializeStore,
+  saveAppData,
   switchMode as switchModeInStore,
   createMode as createModeInStore,
   deleteMode as deleteModeInStore,
@@ -39,6 +40,16 @@ export function useStore() {
         setLoading(false);
       });
   }, []);
+
+  // Persistence guard: whenever app data changes in memory,
+  // ensure the latest snapshot is written to disk.
+  useEffect(() => {
+    if (!data) return;
+
+    saveAppData(data).catch((err) => {
+      setError(err instanceof Error ? err.message : 'Failed to persist app data');
+    });
+  }, [data]);
 
   // Get current mode
   const currentMode = data?.modes.find(mode => mode.id === data.currentModeId);

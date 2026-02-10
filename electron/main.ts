@@ -6,10 +6,20 @@ import Store from 'electron-store';
 // Hot reload with electron-reloader in development
 try {
   if (process.env.VITE_DEV_SERVER_URL) {
-    require('electron-reloader')(module, {
-      debug: true,
-      watchRenderer: false, // Vite handles renderer HMR
-    });
+    void import('electron-reloader')
+      .then((mod) => {
+        const reloader = mod.default as (
+          targetModule: NodeModule,
+          options: { debug: boolean; watchRenderer: boolean }
+        ) => void;
+        reloader(module, {
+          debug: true,
+          watchRenderer: false, // Vite handles renderer HMR
+        });
+      })
+      .catch((error: unknown) => {
+        console.log('Error loading electron-reloader:', error);
+      });
   }
 } catch (err) {
   console.log('Error loading electron-reloader:', err);
@@ -21,7 +31,7 @@ const store = new Store();
 // Desktop window dimensions: fixed width + clamped resizable height
 const WINDOW_WIDTH = 380;
 const DEFAULT_WINDOW_HEIGHT = 520;
-const MIN_WINDOW_HEIGHT = 120;
+const MIN_WINDOW_HEIGHT = 420;
 const MAX_WINDOW_HEIGHT = 900;
 const DEFAULT_ALWAYS_ON_TOP = true;
 const PREFERENCES_KEY = 'linkshelf-preferences';

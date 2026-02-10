@@ -207,7 +207,7 @@ export const MenuBarWindow: React.FC = () => {
       aria-label="Linkshelf"
     >
       <div className="window-header flex flex-col gap-2.5">
-        <div className="pr-1 flex items-center gap-2">
+        <div className="flex items-center gap-1.5">
           <div className="flex-1 min-w-0">
             <ModeSelector
               modes={modes}
@@ -218,28 +218,26 @@ export const MenuBarWindow: React.FC = () => {
               canDeleteMode={modes.length > 1}
             />
           </div>
-          <div className="pt-[2px]">
+          <div>
             <Popover open={showSettings} onOpenChange={setShowSettings}>
               <PopoverTrigger asChild>
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-8 w-8 rounded-lg bg-surface-subtle hover:bg-surface-hover text-text-muted hover:text-text transition-colors shrink-0"
+                  className="h-9 w-9 rounded-lg bg-surface-subtle hover:bg-surface-hover text-text-muted hover:text-text transition-colors shrink-0"
                   title="Settings"
                 >
-                  <Settings2 size={14} strokeWidth={2.5} />
+                  <Settings2 size={14} strokeWidth={2.25} />
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="z-[100] w-64 p-0" align="end" sideOffset={10}>
                 <div className="px-4 pb-3 pt-4">
                   <p className="text-sm font-semibold tracking-tight text-text">Settings</p>
-                  <p className="text-xs text-text-soft">Window and app controls.</p>
                 </div>
 
                 <Separator className="bg-[var(--item-row-border)]" />
 
                 <div className="space-y-3 px-4 py-3">
-                  <h4 className="text-[10px] font-bold uppercase tracking-[0.08em] text-text-soft">Window</h4>
                   <div className="flex items-center justify-between">
                     <Label htmlFor="always-on-top" className="text-xs font-medium text-text-muted cursor-pointer">Always On Top</Label>
                     <Switch id="always-on-top" checked={alwaysOnTopEnabled} onCheckedChange={() => void handleAlwaysOnTopToggle()} />
@@ -249,7 +247,6 @@ export const MenuBarWindow: React.FC = () => {
                 <Separator className="bg-[var(--item-row-border)]" />
 
                 <div className="space-y-2 px-4 py-3">
-                  <h4 className="text-[10px] font-bold uppercase tracking-[0.08em] text-text-soft">System</h4>
                   <Button
                     variant="ghost"
                     size="sm"
@@ -291,7 +288,7 @@ export const MenuBarWindow: React.FC = () => {
 
       <div className="window-footer p-2 pt-0">
         <Button
-          className="w-full h-9 gap-2 bg-accent-app text-[color:var(--btn-primary-text)] hover:bg-accent-app-press rounded-xl font-bold text-sm shadow-lg shadow-accent-app/10 transition-all active:scale-95"
+          className="w-full h-[46px] gap-2 bg-accent-app text-[color:var(--btn-primary-text)] hover:bg-accent-app-press rounded-lg font-bold text-sm shadow-lg shadow-accent-app/10 transition-all active:scale-95"
           onClick={handleAddItem}
         >
           <Plus size={16} strokeWidth={3} />

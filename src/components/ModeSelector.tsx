@@ -100,9 +100,7 @@ export const ModeSelector: React.FC<ModeSelectorProps> = ({
     }
   };
 
-  const getModeLabel = (name: string, itemCount: number): string => (
-    `${name} (${itemCount} ${itemCount === 1 ? 'item' : 'items'})`
-  );
+  const getModeLabel = (name: string): string => name;
 
   return (
     <div className="flex flex-col gap-1.5 w-full">
@@ -115,13 +113,13 @@ export const ModeSelector: React.FC<ModeSelectorProps> = ({
             <SelectContent className="bg-surface border-none shadow-xl rounded-lg">
               {modes.map((mode) => (
                 <SelectItem key={mode.id} value={mode.id} className="text-sm text-text focus:bg-surface-hover focus:text-text">
-                  {getModeLabel(mode.name, mode.items.length)}
+                  {getModeLabel(mode.name)}
                 </SelectItem>
               ))}
             </SelectContent>
           </Select>
         </div>
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-1.5">
           <Button
             variant="ghost"
             size="icon"

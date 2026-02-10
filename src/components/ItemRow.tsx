@@ -38,13 +38,13 @@ export const ItemRow: React.FC<ItemRowProps> = ({
 
   return (
     <li
-      className="group flex items-center gap-1.5 rounded-xl bg-[var(--item-row-bg)] hover:bg-surface-hover/60 border border-[var(--item-row-border)] hover:border-[var(--border-strong)] transition-all duration-200 hover:-translate-y-[1px] hover:shadow-lg hover:shadow-black/5 min-h-[48px]"
+      className="group flex items-center gap-1.5 rounded-lg bg-[var(--item-row-bg)] hover:bg-surface-hover/35 border border-[var(--item-row-border)] hover:border-[var(--border-strong)] transition-all duration-200 hover:-translate-y-[1px] hover:shadow-lg hover:shadow-black/5 min-h-[48px]"
       data-item-type={item.type}
     >
       {/* Main clickable area */}
       <button
         type="button"
-        className="flex-1 min-w-0 border-none bg-transparent py-3 pl-4 pr-0 cursor-pointer flex items-center justify-between gap-3 text-left focus-visible:outline-2 focus-visible:outline-accent-app-soft focus-visible:-outline-offset-2 focus-visible:rounded-xl"
+        className="flex-1 min-w-0 border-none bg-transparent py-3 pl-4 pr-0 cursor-pointer flex items-center justify-between gap-3 text-left focus-visible:outline-2 focus-visible:outline-accent-app-soft focus-visible:-outline-offset-2 focus-visible:rounded-lg"
         onClick={() => void handleCopy()}
         aria-label={`Copy ${item.type} item: ${item.label}`}
       >
@@ -76,24 +76,22 @@ export const ItemRow: React.FC<ItemRowProps> = ({
           </div>
         </div>
 
-        {/* Copy indicator */}
-        <div className="pr-1">
-          <span
-            className={cn(
-              "w-8 h-8 rounded-lg inline-flex items-center justify-center shrink-0 transition-all duration-200",
-              copied
-                ? "text-success bg-success/10 scale-110 shadow-sm"
-                : "text-text-muted bg-surface-subtle/50 opacity-0 group-hover:opacity-100 group-hover:scale-100"
-            )}
-            aria-hidden="true"
-          >
-            {copied ? <Check size={14} strokeWidth={3} /> : <Copy size={13} strokeWidth={2.25} />}
-          </span>
-        </div>
       </button>
 
       {/* Action buttons */}
       <div className="flex gap-1 pr-3 items-center opacity-0 group-hover:opacity-100 transition-all duration-200 translate-x-2 group-hover:translate-x-0">
+        <Button
+          variant="ghost"
+          size="icon"
+          className={cn(
+            "h-7 w-7 rounded-lg bg-surface-subtle/40 hover:bg-surface-pressed text-text-soft hover:text-text transition-colors",
+            copied && "bg-success/15 text-success hover:bg-success/20 hover:text-success"
+          )}
+          onClick={() => void handleCopy()}
+          title={`Copy ${item.label}`}
+        >
+          {copied ? <Check size={11} strokeWidth={2.75} /> : <Copy size={11} strokeWidth={2.25} />}
+        </Button>
         <Button
           variant="ghost"
           size="icon"

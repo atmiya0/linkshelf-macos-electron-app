@@ -128,14 +128,10 @@ export const ItemList: React.FC<ItemListProps> = ({
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="sticky top-0 z-10 flex items-center justify-between rounded-xl border border-[var(--border-strong)] bg-[var(--header-bg)]/95 px-3 py-2 backdrop-blur-xl">
-        <div className="min-w-0">
-          <p className="text-[10px] font-bold uppercase tracking-[0.1em] text-text-soft">Library</p>
-          <p className="text-xs text-text-muted truncate">
-            {`${items.length} item${items.length === 1 ? '' : 's'}`}
-          </p>
-        </div>
-
+      <div className="sticky top-0 z-10 flex items-center justify-end rounded-lg border border-[var(--border-strong)] bg-[var(--header-bg)]/95 px-3 py-2 backdrop-blur-xl">
+        <p className="mr-auto text-xs text-text-muted">
+          {`${items.length} item${items.length === 1 ? '' : 's'}`}
+        </p>
         <Button
           variant="ghost"
           size="sm"
@@ -153,12 +149,11 @@ export const ItemList: React.FC<ItemListProps> = ({
         </Button>
       </div>
 
-      <div className="flex flex-col gap-7 pb-2" role="list">
+      <div className="flex flex-col gap-4 pb-2" role="list">
         {linkItems.length > 0 && (
           <div className="flex flex-col gap-3">
-            <div className="px-2 flex items-center justify-between">
+            <div className="px-2">
               <span className="text-[10px] font-bold uppercase tracking-[0.1em] text-text-soft">Links</span>
-              <span className="text-[10px] text-text-soft">{linkItems.length}</span>
             </div>
             <div className="flex flex-col gap-2">
               {linkItems.map(renderItem)}
@@ -167,10 +162,9 @@ export const ItemList: React.FC<ItemListProps> = ({
         )}
 
         {textItems.length > 0 && (
-          <div className="flex flex-col gap-3 pt-2 border-t border-[var(--item-row-border)]">
-            <div className="px-2 flex items-center justify-between">
+          <div className="flex flex-col gap-3">
+            <div className="px-2">
               <span className="text-[10px] font-bold uppercase tracking-[0.1em] text-text-soft">Text</span>
-              <span className="text-[10px] text-text-soft">{textItems.length}</span>
             </div>
             <div className="flex flex-col gap-2">
               {textItems.map(renderItem)}
