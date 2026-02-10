@@ -1,6 +1,16 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Check, ChevronDown, Plus, Trash2, X } from 'lucide-react';
+import { Check, Plus, Trash2, X } from 'lucide-react';
 import { Mode } from '../types';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { cn } from "@/lib/utils";
 
 interface ModeSelectorProps {
   modes: Mode[];
@@ -11,10 +21,6 @@ interface ModeSelectorProps {
   canDeleteMode: boolean;
 }
 
-/**
- * Dropdown selector for switching between different modes.
- * Supports creating and deleting modes.
- */
 export const ModeSelector: React.FC<ModeSelectorProps> = ({
   modes,
   currentModeId,
@@ -48,18 +54,6 @@ export const ModeSelector: React.FC<ModeSelectorProps> = ({
     };
   }, []);
 
-  const handleStartAddMode = () => {
-    setModeError(null);
-    setIsAddingMode(true);
-    setConfirmDelete(false);
-  };
-
-  const handleCancelAddMode = () => {
-    setIsAddingMode(false);
-    setNewModeName('');
-    setModeError(null);
-  };
-
   const handleCreateMode = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const trimmedName = newModeName.trim();
@@ -82,9 +76,7 @@ export const ModeSelector: React.FC<ModeSelectorProps> = ({
   const handleDeleteMode = async () => {
     setModeError(null);
 
-    if (!canDeleteMode) {
-      return;
-    }
+    if (!canDeleteMode) return;
 
     if (!confirmDelete) {
       setConfirmDelete(true);
@@ -108,83 +100,81 @@ export const ModeSelector: React.FC<ModeSelectorProps> = ({
     }
   };
 
+  const getModeLabel = (name: string, itemCount: number): string => (
+    `${name} (${itemCount} ${itemCount === 1 ? 'item' : 'items'})`
+  );
+
   return (
-    <div className="mode-selector">
-      <div className="mode-row">
-        <div className="mode-select-wrap">
-          <select
-            value={currentModeId}
-            onChange={(e) => onModeChange(e.target.value)}
-            className="mode-select"
-            aria-label="Select mode"
-          >
-            {modes.map((mode) => (
-              <option key={mode.id} value={mode.id}>
-                {mode.name}
-              </option>
-            ))}
-          </select>
-          <ChevronDown className="mode-select-icon" size={14} strokeWidth={2.25} />
+    <div className="flex flex-col gap-1.5 w-full">
+      <div className="flex items-center gap-1.5 w-full">
+        <div className="flex-1">
+          <Select value={currentModeId} onValueChange={onModeChange}>
+            <SelectTrigger className="w-full h-9 rounded-lg bg-surface-subtle border-none text-text text-sm font-semibold focus:ring-1 focus:ring-accent-app-soft hover:bg-surface-hover transition-colors">
+              <SelectValue placeholder="Select mode" />
+            </SelectTrigger>
+            <SelectContent className="bg-surface border-none shadow-xl rounded-lg">
+              {modes.map((mode) => (
+                <SelectItem key={mode.id} value={mode.id} className="text-sm text-text focus:bg-surface-hover focus:text-text">
+                  {getModeLabel(mode.name, mode.items.length)}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
-        <div className="mode-action-group">
-          <button
-            type="button"
-            className="mode-action-btn"
-            onClick={handleStartAddMode}
+        <div className="flex items-center gap-1">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-9 w-9 rounded-lg bg-surface-subtle hover:bg-surface-hover text-text-muted hover:text-text transition-colors"
+            onClick={() => { setIsAddingMode(true); setConfirmDelete(false); }}
             title="Add mode"
-            aria-label="Add mode"
           >
             <Plus size={14} strokeWidth={2.25} />
-          </button>
-          <button
-            type="button"
-            className={`mode-action-btn ${confirmDelete ? 'confirm' : ''}`}
-            onClick={() => void handleDeleteMode()}
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
             disabled={!canDeleteMode}
-            title={
-              canDeleteMode
-                ? confirmDelete
-                  ? 'Click to confirm mode delete'
-                  : 'Delete current mode'
-                : 'At least one mode is required'
-            }
-            aria-label="Delete current mode"
+            className={cn(
+              "h-9 w-9 rounded-lg bg-surface-subtle hover:bg-surface-hover text-text-muted hover:text-text transition-colors",
+              confirmDelete && "bg-danger-soft text-danger hover:bg-danger-soft hover:text-danger animate-pulse"
+            )}
+            onClick={() => void handleDeleteMode()}
+            title={confirmDelete ? 'Click again to confirm' : 'Delete mode'}
           >
             <Trash2 size={14} strokeWidth={2.25} />
-          </button>
+          </Button>
         </div>
       </div>
 
       {isAddingMode && (
-        <form className="mode-create-form" onSubmit={(event) => void handleCreateMode(event)}>
-          <input
+        <form className="flex items-center gap-1.5 rounded-lg bg-surface-subtle p-1" onSubmit={(event) => void handleCreateMode(event)}>
+          <Input
             ref={modeInputRef}
-            type="text"
-            className="mode-create-input"
+            className="h-7 flex-1 text-xs bg-transparent border-none text-text focus-visible:ring-0 placeholder:text-text-soft"
             placeholder="New mode name"
             value={newModeName}
             onChange={(event) => setNewModeName(event.target.value)}
-            aria-label="New mode name"
           />
-          <button type="submit" className="mode-inline-btn" aria-label="Save mode" title="Save mode">
-            <Check size={14} strokeWidth={2.25} />
-          </button>
-          <button
-            type="button"
-            className="mode-inline-btn"
-            onClick={handleCancelAddMode}
-            aria-label="Cancel mode creation"
-            title="Cancel"
-          >
-            <X size={14} strokeWidth={2.25} />
-          </button>
+          <div className="flex gap-0.5">
+            <Button type="submit" variant="ghost" size="icon" className="h-7 w-7 rounded-md text-success hover:bg-success/10">
+              <Check size={14} strokeWidth={2.25} />
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="h-7 w-7 rounded-md text-text-muted hover:bg-surface-hover"
+              onClick={() => { setIsAddingMode(false); setNewModeName(''); setModeError(null); }}
+            >
+              <X size={14} strokeWidth={2.25} />
+            </Button>
+          </div>
         </form>
       )}
 
       {modeError && (
-        <div className="mode-error" role="alert">
-          {modeError}
-        </div>
+        <p className="text-[10px] text-danger px-1">{modeError}</p>
       )}
     </div>
   );

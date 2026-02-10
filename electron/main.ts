@@ -3,13 +3,25 @@ import * as path from 'path';
 import * as fs from 'fs';
 import Store from 'electron-store';
 
+// Hot reload with electron-reloader in development
+try {
+  if (process.env.VITE_DEV_SERVER_URL) {
+    require('electron-reloader')(module, {
+      debug: true,
+      watchRenderer: false, // Vite handles renderer HMR
+    });
+  }
+} catch (err) {
+  console.log('Error loading electron-reloader:', err);
+}
+
 // Initialize electron-store for local data persistence
 const store = new Store();
 
 // Desktop window dimensions: fixed width + clamped resizable height
 const WINDOW_WIDTH = 380;
 const DEFAULT_WINDOW_HEIGHT = 520;
-const MIN_WINDOW_HEIGHT = 420;
+const MIN_WINDOW_HEIGHT = 120;
 const MAX_WINDOW_HEIGHT = 900;
 const DEFAULT_ALWAYS_ON_TOP = true;
 const PREFERENCES_KEY = 'linkshelf-preferences';
@@ -91,10 +103,22 @@ function createMainWindow(): BrowserWindow {
     maximizable: false,
     alwaysOnTop: initialAlwaysOnTop,
     show: false,
+    titleBarStyle: 'hidden',
+    trafficLightPosition: { x: 12, y: 12 },
     webPreferences: {
       nodeIntegration: true,
       contextIsolation: false,
     },
+  });
+
+  window.on('focus', () => {
+    window.setWindowButtonVisibility(true);
+    window.webContents.send('window-focus-change', true);
+  });
+
+  window.on('blur', () => {
+    window.setWindowButtonVisibility(false);
+    window.webContents.send('window-focus-change', false);
   });
 
   if (initialAlwaysOnTop) {

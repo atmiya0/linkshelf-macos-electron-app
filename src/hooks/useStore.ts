@@ -8,6 +8,11 @@ import {
   addItem as addItemToStore,
   updateItem as updateItemInStore,
   deleteItem as deleteItemFromStore,
+  addSection as addSectionInStore,
+  deleteSection as deleteSectionInStore,
+  updateSection as updateSectionInStore,
+  reorderItems as reorderItemsInStore,
+  reorderSections as reorderSectionsInStore,
   copyToClipboard as copyToClipboardUtil,
   quitApp as quitAppInStore,
   resetAppToDefaults as resetAppToDefaultsInStore,
@@ -85,7 +90,7 @@ export function useStore() {
    * Add a new item to the current mode
    */
   const addItem = useCallback(async (
-    item: Omit<LinkshelfItem, 'id' | 'createdAt' | 'updatedAt'>
+    item: Omit<LinkshelfItem, 'id' | 'createdAt' | 'updatedAt' | 'order'> & { order?: number }
   ) => {
     if (!data) return;
     try {
@@ -122,6 +127,71 @@ export function useStore() {
       setData(newData);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to delete item');
+    }
+  }, [data]);
+
+  /**
+   * Add a new section
+   */
+  const addSection = useCallback(async (name: string) => {
+    if (!data) return;
+    try {
+      const newData = await addSectionInStore(data, name);
+      setData(newData);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to add section');
+    }
+  }, [data]);
+
+  /**
+   * Delete a section
+   */
+  const deleteSection = useCallback(async (sectionId: string) => {
+    if (!data) return;
+    try {
+      const newData = await deleteSectionInStore(data, sectionId);
+      setData(newData);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to delete section');
+    }
+  }, [data]);
+
+  /**
+   * Update a section
+   */
+  const updateSection = useCallback(async (sectionId: string, name: string) => {
+    if (!data) return;
+    try {
+      const newData = await updateSectionInStore(data, sectionId, name);
+      setData(newData);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to update section');
+    }
+  }, [data]);
+
+  /**
+   * Reorder items
+   */
+  const reorderItems = useCallback(async (itemIds: string[]) => {
+    if (!data) return;
+    try {
+      const newData = await reorderItemsInStore(data, itemIds);
+      setData(newData);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to reorder items');
+    }
+  }, [data]);
+
+  /**
+   * Reorder sections
+   */
+  const reorderSections = useCallback(async (sectionIds: string[]) => {
+    if (!data) return;
+    try {
+      const newData = await reorderSectionsInStore(data, sectionIds);
+      setData(newData);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to reorder sections');
     }
   }, [data]);
 
@@ -174,6 +244,11 @@ export function useStore() {
     addItem,
     updateItem,
     deleteItem,
+    addSection,
+    deleteSection,
+    updateSection,
+    reorderItems,
+    reorderSections,
     copyToClipboard,
     quitApp,
     resetToDefaults,

@@ -163,7 +163,7 @@ const PREFERENCES_KEY = 'linkshelf-preferences';
 export const DEFAULT_THEME: ThemeMode = 'dark';
 export const DEFAULT_ALWAYS_ON_TOP = true;
 export const DEFAULT_WINDOW_HEIGHT = 520;
-export const MIN_WINDOW_HEIGHT = 420;
+export const MIN_WINDOW_HEIGHT = 120;
 export const MAX_WINDOW_HEIGHT = 900;
 
 function clampWindowHeight(height: number): number {
@@ -405,6 +405,7 @@ export async function createMode(data: AppData, modeName: string): Promise<AppDa
     id: generateId(),
     name: trimmedModeName,
     items: [],
+    sections: [],
   };
 
   const newData: AppData = {
@@ -445,15 +446,21 @@ export async function deleteMode(data: AppData, modeId: string): Promise<AppData
  */
 export async function addItem(
   data: AppData,
-  item: Omit<LinkshelfItem, 'id' | 'createdAt' | 'updatedAt'>
+  item: Omit<LinkshelfItem, 'id' | 'createdAt' | 'updatedAt' | 'order'> & { order?: number }
 ): Promise<AppData> {
+  const currentItems = data.modes.find(m => m.id === data.currentModeId)?.items || [];
+  const maxOrder = currentItems.length > 0
+    ? Math.max(...currentItems.map(i => i.order))
+    : -1;
+
   const newItem: LinkshelfItem = {
     ...item,
     id: generateId(),
     createdAt: Date.now(),
     updatedAt: Date.now(),
+    order: maxOrder + 1,
   };
-  
+
   const newModes = data.modes.map(mode => {
     if (mode.id === data.currentModeId) {
       return {
@@ -463,7 +470,7 @@ export async function addItem(
     }
     return mode;
   });
-  
+
   const newData = { ...data, modes: newModes };
   await saveAppData(newData);
   return newData;
@@ -495,7 +502,7 @@ export async function updateItem(
     }
     return mode;
   });
-  
+
   const newData = { ...data, modes: newModes };
   await saveAppData(newData);
   return newData;
@@ -514,7 +521,132 @@ export async function deleteItem(data: AppData, itemId: string): Promise<AppData
     }
     return mode;
   });
-  
+
+  const newData = { ...data, modes: newModes };
+  await saveAppData(newData);
+  return newData;
+}
+
+/**
+ * Add a new section to the current mode
+ */
+export async function addSection(data: AppData, name: string): Promise<AppData> {
+  const trimmedName = name.trim();
+  if (!trimmedName) throw new Error('Section name is required');
+
+  const newModes = data.modes.map(mode => {
+    if (mode.id === data.currentModeId) {
+      const sections = mode.sections || [];
+      const maxOrder = sections.length > 0 ? Math.max(...sections.map(s => s.order)) : -1;
+      const newSection = {
+        id: generateId(),
+        name: trimmedName,
+        order: maxOrder + 1,
+      };
+      return {
+        ...mode,
+        sections: [...sections, newSection],
+      };
+    }
+    return mode;
+  });
+
+  const newData = { ...data, modes: newModes };
+  await saveAppData(newData);
+  return newData;
+}
+
+/**
+ * Delete a section and unassign its items
+ */
+export async function deleteSection(data: AppData, sectionId: string): Promise<AppData> {
+  const newModes = data.modes.map(mode => {
+    if (mode.id === data.currentModeId) {
+      return {
+        ...mode,
+        sections: (mode.sections || []).filter(s => s.id !== sectionId),
+        items: mode.items.map(item =>
+          item.sectionId === sectionId ? { ...item, sectionId: undefined } : item
+        ),
+      };
+    }
+    return mode;
+  });
+
+  const newData = { ...data, modes: newModes };
+  await saveAppData(newData);
+  return newData;
+}
+
+/**
+ * Update a section name
+ */
+export async function updateSection(data: AppData, sectionId: string, name: string): Promise<AppData> {
+  const newModes = data.modes.map(mode => {
+    if (mode.id === data.currentModeId) {
+      return {
+        ...mode,
+        sections: (mode.sections || []).map(s =>
+          s.id === sectionId ? { ...s, name } : s
+        ),
+      };
+    }
+    return mode;
+  });
+
+  const newData = { ...data, modes: newModes };
+  await saveAppData(newData);
+  return newData;
+}
+
+/**
+ * Reorder items globally or within a section
+ */
+export async function reorderItems(data: AppData, itemIds: string[]): Promise<AppData> {
+  const newModes = data.modes.map(mode => {
+    if (mode.id === data.currentModeId) {
+      const itemsMap = new Map(mode.items.map(item => [item.id, item]));
+      const newItems = itemIds.map((id, index) => {
+        const item = itemsMap.get(id);
+        if (!item) return null;
+        return { ...item, order: index };
+      }).filter((item): item is LinkshelfItem => item !== null);
+
+      // Add back items that weren't in the reorder list (if any)
+      const remainingItems = mode.items.filter(item => !itemIds.includes(item.id));
+
+      return {
+        ...mode,
+        items: [...newItems, ...remainingItems],
+      };
+    }
+    return mode;
+  });
+
+  const newData = { ...data, modes: newModes };
+  await saveAppData(newData);
+  return newData;
+}
+
+/**
+ * Reorder sections
+ */
+export async function reorderSections(data: AppData, sectionIds: string[]): Promise<AppData> {
+  const newModes = data.modes.map(mode => {
+    if (mode.id === data.currentModeId) {
+      const sections = mode.sections || [];
+      const sectionsMap = new Map(sections.map(s => [s.id, s]));
+      const newSections = sectionIds.map((id, index) => {
+        const section = sectionsMap.get(id);
+        if (!section) return null;
+        return { ...section, order: index };
+      }).filter(s => s !== null);
+
+      return { ...mode, sections: newSections as any };
+    }
+    return mode;
+  });
+
   const newData = { ...data, modes: newModes };
   await saveAppData(newData);
   return newData;

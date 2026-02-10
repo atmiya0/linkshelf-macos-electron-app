@@ -1,36 +1,44 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { Crosshair, Moon, Pin, PinOff, Plus, Power, RotateCcw, Settings2, Sun } from 'lucide-react';
-import { LinkshelfItem, FormData, ThemeMode } from '../types';
+import React, { useEffect, useState } from 'react';
+import {
+  Plus,
+  Power,
+  RotateCcw,
+  Settings2,
+} from 'lucide-react';
+import { LinkshelfItem, FormData } from '../types';
 import { useStore } from '../hooks/useStore';
 import {
   DEFAULT_ALWAYS_ON_TOP,
-  DEFAULT_THEME,
-  DEFAULT_WINDOW_HEIGHT,
   getAlwaysOnTopPreference,
-  getThemePreference,
-  getWindowHeightPreference,
-  MAX_WINDOW_HEIGHT,
-  MIN_WINDOW_HEIGHT,
-  centerWindow,
   setAlwaysOnTop,
   setAlwaysOnTopPreference,
-  setThemePreference,
-  setWindowHeight,
-  setWindowHeightPreference,
 } from '../state/store';
 import { ModeSelector } from './ModeSelector';
 import { ItemList } from './ItemList';
 import { ItemForm } from './ItemForm';
+import { Toast } from './Toast';
+import { Button } from '@/components/ui/button';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
+import { Separator } from '@/components/ui/separator';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
+import { cn } from '@/lib/utils';
 
-const clampHeight = (height: number): number => (
-  Math.min(MAX_WINDOW_HEIGHT, Math.max(MIN_WINDOW_HEIGHT, Math.round(height)))
-);
+interface FocusAwareIpcRenderer {
+  on: (channel: string, listener: (_event: unknown, focused: boolean) => void) => void;
+  removeListener: (channel: string, listener: (_event: unknown, focused: boolean) => void) => void;
+}
 
-/**
- * Main desktop window component.
- * Contains mode selector, item list, and add button.
- * Manages modal state for add/edit forms.
- */
+interface ElectronWindow extends Window {
+  require?: (module: string) => {
+    ipcRenderer?: FocusAwareIpcRenderer;
+  };
+}
+
 export const MenuBarWindow: React.FC = () => {
   const {
     loading,
@@ -43,6 +51,7 @@ export const MenuBarWindow: React.FC = () => {
     addItem,
     updateItem,
     deleteItem,
+    reorderItems,
     copyToClipboard,
     quitApp,
     resetToDefaults,
@@ -50,32 +59,14 @@ export const MenuBarWindow: React.FC = () => {
 
   const [showForm, setShowForm] = useState(false);
   const [editingItem, setEditingItem] = useState<LinkshelfItem | null>(null);
-  const [theme, setTheme] = useState<ThemeMode>('dark');
-  const [windowHeightValue, setWindowHeightValue] = useState<number>(MIN_WINDOW_HEIGHT);
   const [alwaysOnTopEnabled, setAlwaysOnTopEnabled] = useState<boolean>(DEFAULT_ALWAYS_ON_TOP);
   const [showSettings, setShowSettings] = useState(false);
   const [confirmReset, setConfirmReset] = useState(false);
-  const settingsRef = useRef<HTMLDivElement | null>(null);
+  const [toast, setToast] = useState<{ message: React.ReactNode } | null>(null);
+  const [isFocused, setIsFocused] = useState(true);
 
   useEffect(() => {
     const loadPreferences = async () => {
-      try {
-        const savedTheme = await getThemePreference();
-        setTheme(savedTheme);
-      } catch {
-        setTheme('dark');
-      }
-
-      try {
-        const preferredHeight = await getWindowHeightPreference();
-        const appliedHeight = await setWindowHeight(preferredHeight);
-        await setWindowHeightPreference(appliedHeight);
-        setWindowHeightValue(appliedHeight);
-      } catch {
-        // Fallback to the current window height when IPC is unavailable.
-        setWindowHeightValue(clampHeight(window.innerHeight));
-      }
-
       try {
         const savedAlwaysOnTop = await getAlwaysOnTopPreference();
         const appliedAlwaysOnTop = await setAlwaysOnTop(savedAlwaysOnTop);
@@ -87,47 +78,37 @@ export const MenuBarWindow: React.FC = () => {
     };
 
     void loadPreferences();
-  }, []);
 
-  useEffect(() => {
-    const syncHeight = () => {
-      setWindowHeightValue(clampHeight(window.innerHeight));
-    };
-
-    window.addEventListener('resize', syncHeight);
-    return () => {
-      window.removeEventListener('resize', syncHeight);
-    };
-  }, []);
-
-  useEffect(() => {
-    if (!showSettings) {
-      setConfirmReset(false);
-      return undefined;
+    const electronWindow = window as ElectronWindow;
+    const electronModule = electronWindow.require?.('electron');
+    const ipcRenderer = electronModule?.ipcRenderer;
+    if (!ipcRenderer) {
+      return;
     }
 
-    const handlePointerDown = (event: MouseEvent) => {
-      if (!settingsRef.current?.contains(event.target as Node)) {
-        setShowSettings(false);
-      }
-    };
+    const handleFocusChange = (_: unknown, focused: boolean) => setIsFocused(focused);
+    ipcRenderer.on('window-focus-change', handleFocusChange);
 
-    const handleEscape = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        setShowSettings(false);
-      }
-    };
-
-    document.addEventListener('mousedown', handlePointerDown);
-    document.addEventListener('keydown', handleEscape);
     return () => {
-      document.removeEventListener('mousedown', handlePointerDown);
-      document.removeEventListener('keydown', handleEscape);
+      ipcRenderer.removeListener('window-focus-change', handleFocusChange);
     };
-  }, [showSettings]);
+  }, []);
 
-  const handleCopy = async (value: string) => {
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', 'dark');
+    document.documentElement.style.colorScheme = 'dark';
+  }, []);
+
+  const handleCopy = async (value: string, type: string, label: string) => {
     await copyToClipboard(value);
+    const truncatedLabel = label.length > 24 ? `${label.substring(0, 24)}...` : label;
+    setToast({
+      message: (
+        <span>
+          Copied {type}: <strong>{truncatedLabel}</strong>
+        </span>
+      )
+    });
   };
 
   const handleAddItem = () => {
@@ -141,13 +122,22 @@ export const MenuBarWindow: React.FC = () => {
   };
 
   const handleSaveItem = async (formData: FormData) => {
-    if (editingItem) {
-      await updateItem(editingItem.id, formData);
-    } else {
-      await addItem(formData);
+    const normalizedFormData: FormData = {
+      ...formData,
+      sectionId: undefined,
+    };
+
+    try {
+      if (editingItem) {
+        await updateItem(editingItem.id, normalizedFormData);
+      } else {
+        await addItem(normalizedFormData);
+      }
+      setShowForm(false);
+      setEditingItem(null);
+    } catch (err) {
+      console.error('Failed to save item:', err);
     }
-    setShowForm(false);
-    setEditingItem(null);
   };
 
   const handleCancel = () => {
@@ -155,32 +145,9 @@ export const MenuBarWindow: React.FC = () => {
     setEditingItem(null);
   };
 
-  const handleThemeChange = async (nextTheme: ThemeMode) => {
-    setTheme(nextTheme);
-    try {
-      await setThemePreference(nextTheme);
-    } catch (themeError) {
-      console.error('Failed to save theme preference:', themeError);
-    }
-  };
-
-  const handleWindowHeightChange = async (nextHeight: number) => {
-    const clampedHeight = clampHeight(nextHeight);
-    setWindowHeightValue(clampedHeight);
-
-    try {
-      const appliedHeight = await setWindowHeight(clampedHeight);
-      setWindowHeightValue(appliedHeight);
-      await setWindowHeightPreference(appliedHeight);
-    } catch (heightError) {
-      console.error('Failed to resize window:', heightError);
-    }
-  };
-
   const handleAlwaysOnTopToggle = async () => {
     const nextValue = !alwaysOnTopEnabled;
     setAlwaysOnTopEnabled(nextValue);
-
     try {
       const appliedValue = await setAlwaysOnTop(nextValue);
       setAlwaysOnTopEnabled(appliedValue);
@@ -191,27 +158,13 @@ export const MenuBarWindow: React.FC = () => {
     }
   };
 
-  const handleCenterWindow = async () => {
-    try {
-      await centerWindow();
-    } catch (centerError) {
-      console.error('Failed to center window:', centerError);
-    }
-  };
-
   const handleResetDefaults = async () => {
     if (!confirmReset) {
       setConfirmReset(true);
       return;
     }
-
     const didReset = await resetToDefaults();
-    if (!didReset) {
-      return;
-    }
-
-    setTheme(DEFAULT_THEME);
-    setWindowHeightValue(DEFAULT_WINDOW_HEIGHT);
+    if (!didReset) return;
     setAlwaysOnTopEnabled(DEFAULT_ALWAYS_ON_TOP);
     setConfirmReset(false);
     setShowSettings(false);
@@ -224,7 +177,7 @@ export const MenuBarWindow: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="window" data-theme={theme} role="region" aria-label="Linkshelf">
+      <div className="window" data-theme="dark" role="region" aria-label="Linkshelf">
         <div className="loading" role="status" aria-live="polite">Loading...</div>
       </div>
     );
@@ -232,7 +185,7 @@ export const MenuBarWindow: React.FC = () => {
 
   if (error) {
     return (
-      <div className="window" data-theme={theme} role="region" aria-label="Linkshelf">
+      <div className="window" data-theme="dark" role="region" aria-label="Linkshelf">
         <div className="error" role="alert">Error: {error}</div>
       </div>
     );
@@ -240,146 +193,89 @@ export const MenuBarWindow: React.FC = () => {
 
   if (!currentMode) {
     return (
-      <div className="window" data-theme={theme} role="region" aria-label="Linkshelf">
+      <div className="window" data-theme="dark" role="region" aria-label="Linkshelf">
         <div className="error" role="alert">No mode selected</div>
       </div>
     );
   }
 
-  const itemCount = currentMode.items.length;
-  const itemCountLabel = `${itemCount} ${itemCount === 1 ? 'item' : 'items'}`;
-
   return (
-    <div className="window" data-theme={theme} role="region" aria-label="Linkshelf">
-      <div className="window-header">
-        <div className="header-top-row">
-          <div className="app-title">
-            <span>Linkshelf</span>
+    <div
+      className={`window ${isFocused ? 'is-focused' : 'not-focused'}`}
+      data-theme="dark"
+      role="region"
+      aria-label="Linkshelf"
+    >
+      <div className="window-header flex flex-col gap-2.5">
+        <div className="pr-1 flex items-center gap-2">
+          <div className="flex-1 min-w-0">
+            <ModeSelector
+              modes={modes}
+              currentModeId={currentMode.id}
+              onModeChange={switchMode}
+              onModeAdd={addMode}
+              onModeDelete={removeMode}
+              canDeleteMode={modes.length > 1}
+            />
           </div>
-          <div className="header-actions">
-            <span className="header-badge">{itemCountLabel}</span>
-            <div className="settings-wrapper" ref={settingsRef}>
-              <button
-                type="button"
-                className="icon-btn"
-                onClick={() => setShowSettings(prev => !prev)}
-                aria-label="Open settings"
-                aria-haspopup="dialog"
-                aria-expanded={showSettings}
-                aria-controls="settings-popover"
-                title="Settings"
-              >
-                <Settings2 size={14} strokeWidth={2.25} />
-              </button>
-              {showSettings && (
-                <div
-                  id="settings-popover"
-                  className="settings-popover"
-                  role="dialog"
-                  aria-label="Settings"
+          <div className="pt-[2px]">
+            <Popover open={showSettings} onOpenChange={setShowSettings}>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8 rounded-lg bg-surface-subtle hover:bg-surface-hover text-text-muted hover:text-text transition-colors shrink-0"
+                  title="Settings"
                 >
-                  <div className="settings-label">Appearance</div>
-                  <div className="settings-inline-controls" role="radiogroup" aria-label="Theme">
-                    <button
-                      type="button"
-                      className={`settings-control settings-control-inline ${theme === 'light' ? 'active' : ''}`}
-                      onClick={() => void handleThemeChange('light')}
-                      role="radio"
-                      aria-checked={theme === 'light'}
-                    >
-                      <Sun size={14} strokeWidth={2.25} />
-                      <span>Light</span>
-                    </button>
-                    <button
-                      type="button"
-                      className={`settings-control settings-control-inline ${theme === 'dark' ? 'active' : ''}`}
-                      onClick={() => void handleThemeChange('dark')}
-                      role="radio"
-                      aria-checked={theme === 'dark'}
-                    >
-                      <Moon size={14} strokeWidth={2.25} />
-                      <span>Dark</span>
-                    </button>
+                  <Settings2 size={14} strokeWidth={2.5} />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="z-[100] w-64 p-0" align="end" sideOffset={10}>
+                <div className="px-4 pb-3 pt-4">
+                  <p className="text-sm font-semibold tracking-tight text-text">Settings</p>
+                  <p className="text-xs text-text-soft">Window and app controls.</p>
+                </div>
+
+                <Separator className="bg-[var(--item-row-border)]" />
+
+                <div className="space-y-3 px-4 py-3">
+                  <h4 className="text-[10px] font-bold uppercase tracking-[0.08em] text-text-soft">Window</h4>
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="always-on-top" className="text-xs font-medium text-text-muted cursor-pointer">Always On Top</Label>
+                    <Switch id="always-on-top" checked={alwaysOnTopEnabled} onCheckedChange={() => void handleAlwaysOnTopToggle()} />
                   </div>
+                </div>
 
-                  <div className="settings-divider" />
+                <Separator className="bg-[var(--item-row-border)]" />
 
-                  <div className="settings-row">
-                    <div className="settings-label">Window</div>
-                    <span className="settings-value">{windowHeightValue}px</span>
-                  </div>
-                  <button
-                    type="button"
-                    className={`settings-control ${alwaysOnTopEnabled ? 'active' : ''}`}
-                    onClick={() => void handleAlwaysOnTopToggle()}
-                  >
-                    {alwaysOnTopEnabled ? <Pin size={14} strokeWidth={2.25} /> : <PinOff size={14} strokeWidth={2.25} />}
-                    <span>{alwaysOnTopEnabled ? 'Always On Top: On' : 'Always On Top: Off'}</span>
-                  </button>
-                  <label className="settings-range-label" htmlFor="window-height-range">
-                    Height
-                  </label>
-                  <input
-                    id="window-height-range"
-                    type="range"
-                    className="height-range"
-                    min={MIN_WINDOW_HEIGHT}
-                    max={MAX_WINDOW_HEIGHT}
-                    value={windowHeightValue}
-                    onChange={(event) => void handleWindowHeightChange(Number(event.target.value))}
-                    aria-label="Window height"
-                  />
-                  <div className="height-meta">
-                    <span>{MIN_WINDOW_HEIGHT}px</span>
-                    <span>{MAX_WINDOW_HEIGHT}px</span>
-                  </div>
-                  <button
-                    type="button"
-                    className="settings-control"
-                    onClick={() => void handleCenterWindow()}
-                  >
-                    <Crosshair size={14} strokeWidth={2.25} />
-                    <span>Center Window</span>
-                  </button>
-
-                  <div className="settings-divider" />
-
-                  <div className="settings-label">Data</div>
-                  <p className="settings-hint">
-                    Reset modes, links, and preferences.
-                  </p>
-                  <button
-                    type="button"
-                    className={`settings-control settings-control-danger ${confirmReset ? 'confirm' : ''}`}
+                <div className="space-y-2 px-4 py-3">
+                  <h4 className="text-[10px] font-bold uppercase tracking-[0.08em] text-text-soft">System</h4>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className={cn(
+                      'w-full justify-start h-8 rounded-lg bg-surface-subtle text-xs text-text-muted hover:bg-surface-hover hover:text-text',
+                      confirmReset && 'bg-danger-soft text-danger hover:bg-danger-soft hover:text-danger animate-pulse'
+                    )}
                     onClick={() => void handleResetDefaults()}
                   >
-                    <RotateCcw size={14} strokeWidth={2.25} />
-                    <span>{confirmReset ? 'Confirm Reset' : 'Reset to Defaults'}</span>
-                  </button>
-
-                  <div className="settings-divider" />
-                  <button
-                    type="button"
-                    className="settings-control settings-control-danger"
+                    <RotateCcw className="mr-2 h-3.5 w-3.5" strokeWidth={2.25} />
+                    {confirmReset ? 'Confirm Reset' : 'Reset to Defaults'}
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="w-full justify-start h-8 rounded-lg bg-surface-subtle text-xs text-danger hover:bg-danger-soft hover:text-danger"
                     onClick={() => void handleQuit()}
                   >
-                    <Power size={14} strokeWidth={2.25} />
-                    <span>Quit Linkshelf</span>
-                  </button>
+                    <Power className="mr-2 h-3.5 w-3.5" strokeWidth={2.25} />
+                    Quit Linkshelf
+                  </Button>
                 </div>
-              )}
-            </div>
+              </PopoverContent>
+            </Popover>
           </div>
         </div>
-        <p className="header-subtitle">Compact shelf for links and snippets</p>
-        <ModeSelector
-          modes={modes}
-          currentModeId={currentMode.id}
-          onModeChange={switchMode}
-          onModeAdd={addMode}
-          onModeDelete={removeMode}
-          canDeleteMode={modes.length > 1}
-        />
       </div>
 
       <div className="window-content">
@@ -388,14 +284,19 @@ export const MenuBarWindow: React.FC = () => {
           onCopy={handleCopy}
           onEdit={handleEditItem}
           onDelete={deleteItem}
+          onReorderItems={reorderItems}
+          onAddItem={handleAddItem}
         />
       </div>
 
-      <div className="window-footer">
-        <button className="btn btn-primary btn-add" onClick={handleAddItem}>
-          <Plus size={14} strokeWidth={2.25} />
-          <span>Add Item</span>
-        </button>
+      <div className="window-footer p-2 pt-0">
+        <Button
+          className="w-full h-9 gap-2 bg-accent-app text-[color:var(--btn-primary-text)] hover:bg-accent-app-press rounded-xl font-bold text-sm shadow-lg shadow-accent-app/10 transition-all active:scale-95"
+          onClick={handleAddItem}
+        >
+          <Plus size={16} strokeWidth={3} />
+          Add Item
+        </Button>
       </div>
 
       {showForm && (
@@ -405,35 +306,13 @@ export const MenuBarWindow: React.FC = () => {
           onCancel={handleCancel}
         />
       )}
+
+      {toast && (
+        <Toast
+          message={toast.message}
+          onClose={() => setToast(null)}
+        />
+      )}
     </div>
   );
 };
-
-/**
- * Future enhancements that could be added here:
- * 
- * 1. Search functionality:
- *    - Add a search input in the header
- *    - Filter items based on label or value
- *    - Keyboard shortcut to focus search (e.g., Cmd+F)
- * 
- * 2. Keyboard shortcuts:
- *    - Cmd+N for new item
- *    - Number keys 1-9 to quickly copy items
- *    - Arrow keys for navigation
- * 
- * 3. AI-assisted modes:
- *    - Integration with AI to suggest items based on context
- *    - Auto-categorization of pasted content
- *    - Smart suggestions for email templates
- * 
- * 4. Export/Import:
- *    - Export mode as JSON
- *    - Import items from JSON or CSV
- *    - Share modes with team members (local files only)
- * 
- * 5. Statistics:
- *    - Track most copied items
- *    - Show usage analytics
- *    - Time-based sorting options
- */

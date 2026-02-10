@@ -1,19 +1,16 @@
 import React, { useState } from 'react';
 import { AlertTriangle, Check, Copy, FileText, Link2, Pencil, Trash2 } from 'lucide-react';
 import { LinkshelfItem } from '../types';
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 interface ItemRowProps {
   item: LinkshelfItem;
-  onCopy: (value: string) => void | Promise<void>;
+  onCopy: (value: string, type: string, label: string) => void | Promise<void>;
   onEdit: (item: LinkshelfItem) => void;
   onDelete: (itemId: string) => void;
 }
 
-/**
- * Individual row displaying a single item (link or text snippet).
- * Clicking the row or copy button copies the value to clipboard.
- * Hover shows edit and delete buttons.
- */
 export const ItemRow: React.FC<ItemRowProps> = ({
   item,
   onCopy,
@@ -24,7 +21,7 @@ export const ItemRow: React.FC<ItemRowProps> = ({
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   const handleCopy = async () => {
-    await onCopy(item.value);
+    await onCopy(item.value, item.type, item.label);
     setCopied(true);
     setTimeout(() => setCopied(false), 1200);
   };
@@ -40,71 +37,84 @@ export const ItemRow: React.FC<ItemRowProps> = ({
   };
 
   return (
-    <li className="item-row" data-item-type={item.type}>
+    <li
+      className="group flex items-center gap-1.5 rounded-xl bg-[var(--item-row-bg)] hover:bg-surface-hover/60 border border-[var(--item-row-border)] hover:border-[var(--border-strong)] transition-all duration-200 hover:-translate-y-[1px] hover:shadow-lg hover:shadow-black/5 min-h-[48px]"
+      data-item-type={item.type}
+    >
+      {/* Main clickable area */}
       <button
         type="button"
-        className="item-main"
+        className="flex-1 min-w-0 border-none bg-transparent py-3 pl-4 pr-0 cursor-pointer flex items-center justify-between gap-3 text-left focus-visible:outline-2 focus-visible:outline-accent-app-soft focus-visible:-outline-offset-2 focus-visible:rounded-xl"
         onClick={() => void handleCopy()}
         aria-label={`Copy ${item.type} item: ${item.label}`}
       >
-        <div className="item-content">
-          <div className="item-label-row">
-            <div className="item-label" title={item.label}>
+        <div className="flex-1 min-w-0">
+          {/* Label row */}
+          <div className="flex items-center gap-2 mb-1">
+            <span className="text-sm font-bold text-text truncate tracking-tight" style={{ fontFamily: 'Outfit, sans-serif' }} title={item.label}>
               {item.label}
-            </div>
-            <span className="item-kind">{item.type === 'link' ? 'Link' : 'Text'}</span>
-          </div>
-          <div className="item-value">
-            <span className="item-type-icon" aria-hidden="true">
-              {item.type === 'link' ? (
-                <Link2 size={13} strokeWidth={2.25} />
-              ) : (
-                <FileText size={13} strokeWidth={2.25} />
-              )}
             </span>
             <span
-              className={item.type === 'link' ? 'item-link' : 'item-text'}
-              title={item.value}
+              className={cn(
+                "shrink-0 h-[18px] px-1.5 rounded-md text-[10px] font-bold uppercase tracking-wider inline-flex items-center",
+                item.type === 'link'
+                  ? "bg-[var(--item-kind-link-bg)] text-[var(--item-kind-link-color)]"
+                  : "bg-[var(--item-kind-text-bg)] text-[var(--item-kind-text-color)]"
+              )}
             >
-              {item.value.length > 60 ? `${item.value.substring(0, 60)}...` : item.value}
+              {item.type === 'link' ? 'Link' : 'Text'}
+            </span>
+          </div>
+          {/* Value row */}
+          <div className="flex items-center gap-1.5 min-w-0 text-xs text-text-soft">
+            <span className="inline-flex shrink-0 text-text-muted">
+              {item.type === 'link' ? <Link2 size={11} strokeWidth={2.5} /> : <FileText size={11} strokeWidth={2.5} />}
+            </span>
+            <span className={cn("truncate text-text-muted", item.type === 'link' && "text-[var(--link-text)] font-medium")} title={item.value}>
+              {item.value}
             </span>
           </div>
         </div>
-        <span className={`copy-indicator ${copied ? 'copied' : ''}`} aria-hidden="true">
-          {copied ? <Check size={14} strokeWidth={2.25} /> : <Copy size={14} strokeWidth={2.25} />}
-        </span>
-        <span className="sr-only" aria-live="polite">
-          {copied ? `${item.label} copied to clipboard` : ''}
-        </span>
+
+        {/* Copy indicator */}
+        <div className="pr-1">
+          <span
+            className={cn(
+              "w-8 h-8 rounded-lg inline-flex items-center justify-center shrink-0 transition-all duration-200",
+              copied
+                ? "text-success bg-success/10 scale-110 shadow-sm"
+                : "text-text-muted bg-surface-subtle/50 opacity-0 group-hover:opacity-100 group-hover:scale-100"
+            )}
+            aria-hidden="true"
+          >
+            {copied ? <Check size={14} strokeWidth={3} /> : <Copy size={13} strokeWidth={2.25} />}
+          </span>
+        </div>
       </button>
 
-      <div className="item-actions">
-        <button
-          type="button"
-          className="action-btn edit-btn"
+      {/* Action buttons */}
+      <div className="flex gap-1 pr-3 items-center opacity-0 group-hover:opacity-100 transition-all duration-200 translate-x-2 group-hover:translate-x-0">
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-7 w-7 rounded-lg bg-surface-subtle/40 hover:bg-surface-pressed text-text-soft hover:text-text transition-colors"
           onClick={() => onEdit(item)}
           title={`Edit ${item.label}`}
-          aria-label={`Edit ${item.label}`}
         >
-          <Pencil size={14} strokeWidth={2.25} />
-        </button>
-        <button
-          type="button"
-          className={`action-btn delete-btn ${showDeleteConfirm ? 'confirm' : ''}`}
-          onClick={handleDelete}
-          title={showDeleteConfirm ? 'Click again to confirm delete' : 'Delete item'}
-          aria-label={
-            showDeleteConfirm
-              ? `Confirm delete ${item.label}`
-              : `Delete ${item.label}. Click again to confirm`
-          }
-        >
-          {showDeleteConfirm ? (
-            <AlertTriangle size={14} strokeWidth={2.25} />
-          ) : (
-            <Trash2 size={14} strokeWidth={2.25} />
+          <Pencil size={11} strokeWidth={2.5} />
+        </Button>
+        <Button
+          variant="ghost"
+          size="icon"
+          className={cn(
+            "h-7 w-7 rounded-lg bg-surface-subtle/40 hover:bg-surface-pressed text-text-soft hover:text-text transition-colors",
+            showDeleteConfirm && "bg-danger-soft text-danger hover:bg-danger-soft hover:text-danger animate-pulse"
           )}
-        </button>
+          onClick={handleDelete}
+          title={showDeleteConfirm ? 'Confirm delete' : 'Delete item'}
+        >
+          {showDeleteConfirm ? <AlertTriangle size={11} strokeWidth={2.5} /> : <Trash2 size={11} strokeWidth={2.5} />}
+        </Button>
       </div>
     </li>
   );
