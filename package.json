@@ -20,11 +20,13 @@
     "productName": "Linkshelf",
     "mac": {
       "category": "public.app-category.productivity",
-      "target": "dmg"
+      "target": "dmg",
+      "icon": "electron/assets/icon.icns"
     },
     "files": [
       "dist/**/*",
       "electron-dist/**/*",
+      "electron/assets/**/*",
       "package.json"
     ],
     "extraMetadata": {

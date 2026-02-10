@@ -81,6 +81,7 @@ function getInitialAlwaysOnTop(): boolean {
 // Determine the renderer URL based on environment.
 // If a dev server URL is provided, use that. Otherwise fall back to built files.
 const distPath = path.join(__dirname, '../dist/index.html');
+const appIconPath = path.join(__dirname, '../electron/assets/icon.icns');
 const devServerUrl = process.env.VITE_DEV_SERVER_URL;
 const isDev = Boolean(devServerUrl);
 
@@ -107,6 +108,7 @@ function createMainWindow(): BrowserWindow {
     maxWidth: WINDOW_WIDTH,
     minHeight: MIN_WINDOW_HEIGHT,
     maxHeight: MAX_WINDOW_HEIGHT,
+    icon: appIconPath,
     title: 'Linkshelf',
     resizable: true,
     fullscreenable: false,
