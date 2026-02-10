@@ -81,7 +81,9 @@ function getInitialAlwaysOnTop(): boolean {
 // Determine the renderer URL based on environment.
 // If a dev server URL is provided, use that. Otherwise fall back to built files.
 const distPath = path.join(__dirname, '../dist/index.html');
-const appIconPath = path.join(__dirname, '../electron/assets/icon.icns');
+const appIconPath = process.platform === 'win32'
+  ? path.join(__dirname, '../electron/assets/icon.ico')
+  : path.join(__dirname, '../electron/assets/icon.icns');
 const devServerUrl = process.env.VITE_DEV_SERVER_URL;
 const isDev = Boolean(devServerUrl);
 

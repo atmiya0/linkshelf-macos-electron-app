@@ -12,6 +12,8 @@
     "build": "vite build",
     "build:electron": "tsc --project tsconfig.electron.json",
     "package": "npm run build && npm run build:electron && electron-builder",
+    "package:all": "npm run build && npm run build:electron && electron-builder --mac --win --x64",
+    "package:win": "npm run build && npm run build:electron && electron-builder --win --x64",
     "lint": "eslint src electron --ext .ts,.tsx",
     "lint:fix": "eslint src electron --ext .ts,.tsx --fix"
   },
@@ -22,6 +24,13 @@
       "category": "public.app-category.productivity",
       "target": "dmg",
       "icon": "electron/assets/icon.icns"
+    },
+    "win": {
+      "target": [
+        "nsis",
+        "portable"
+      ],
+      "icon": "electron/assets/icon.ico"
     },
     "files": [
       "dist/**/*",
