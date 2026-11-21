@@ -19,6 +19,9 @@
   "build": {
     "appId": "com.linkshelf.menubar",
     "productName": "Linkshelf",
+    "directories": {
+      "output": "release"
+    },
     "mac": {
       "category": "public.app-category.productivity",
       "target": "dmg",

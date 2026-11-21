@@ -40,7 +40,7 @@ There's no account and no cloud. Linkshelf doesn't connect to the internet. Ever
 ~/Library/Application Support/Linkshelf/config.json
 ```
 
-When you run the app from source, the folder is called `linkshelf-menubar-macos` instead.
+When you run it from source with `npm start`, data is saved in `~/Library/Application Support/Electron/config.json` instead, so the two keep separate lists.
 
 ## Get started
 
@@ -62,7 +62,7 @@ The window opens with a few starter items. Edit or delete them, then add your ow
 npm run package
 ```
 
-This creates a `.dmg` installer in the `dist` folder.
+This creates `Linkshelf.app` and a `.dmg` installer in the `release` folder.
 
 ## For developers
 
@@ -71,7 +71,7 @@ This creates a `.dmg` installer in the `dist` folder.
 | `npm start` | Runs the app with live reload |
 | `npm run build` | Builds the interface into `dist` |
 | `npm run build:electron` | Compiles the main process into `electron-dist` |
-| `npm run package` | Builds a `.dmg` installer |
+| `npm run package` | Builds `Linkshelf.app` and a `.dmg` installer into `release` |
 | `npm run lint` | Checks the code |
 | `npm run icons` | Regenerates the app icons from `electron/assets/logo.svg` |
 

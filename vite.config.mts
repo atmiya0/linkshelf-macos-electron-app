@@ -18,6 +18,8 @@ export default defineConfig({
   server: {
     port: 3000,
     strictPort: true,
+    // Packaged builds land in release/; don't reload the dev page while electron-builder writes there
+    watch: { ignored: ['**/release/**', '**/electron-dist/**'] },
   },
   root: '.',
 });
