@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { LinkshelfItem } from '../types';
 import { ItemRow } from './ItemRow';
 import { GripVertical, Inbox, Plus } from 'lucide-react';
@@ -31,6 +31,36 @@ export const ItemList: React.FC<ItemListProps> = ({
 }) => {
   const [dragOverId, setDragOverId] = useState<string | null>(null);
   const dragItemId = useRef<string | null>(null);
+  const listRef = useRef<HTMLDivElement | null>(null);
+
+  // ↑/↓ move between rows (Raycast-style); Enter copies because each row is a button.
+  // From anywhere outside the list (header, nothing focused), ↓ jumps to the first row and ↑ to the last.
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (!['ArrowDown', 'ArrowUp', 'Home', 'End'].includes(event.key)) return;
+      if (event.metaKey || event.ctrlKey || event.altKey) return;
+      const list = listRef.current;
+      if (!list || document.querySelector('[role="dialog"], [role="menu"]')) return;
+      const active = document.activeElement as HTMLElement | null;
+      // Leave arrow keys alone while typing
+      if (active && (active.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(active.tagName))) return;
+
+      const buttons = Array.from(list.querySelectorAll<HTMLButtonElement>('[data-copy-button]:not(:disabled)'));
+      if (buttons.length === 0) return;
+      const current = buttons.findIndex((button) => button === active || button.parentElement?.contains(active));
+      let next: number;
+      if (event.key === 'Home') next = 0;
+      else if (event.key === 'End') next = buttons.length - 1;
+      else if (current === -1) next = event.key === 'ArrowDown' ? 0 : buttons.length - 1;
+      else next = Math.min(buttons.length - 1, Math.max(0, current + (event.key === 'ArrowDown' ? 1 : -1)));
+
+      event.preventDefault();
+      buttons[next].focus();
+      buttons[next].scrollIntoView({ block: 'nearest' });
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   const sortedItems = [...items].sort((a, b) => a.order - b.order);
   const linkItems = sortedItems.filter((item) => item.type === 'link');
@@ -159,7 +189,7 @@ export const ItemList: React.FC<ItemListProps> = ({
   }
 
   return (
-    <div className="flex flex-col gap-1.5">
+    <div ref={listRef} className="flex flex-col gap-1.5">
       {isReordering && (
         <p className="flex items-center gap-1.5 rounded-md bg-surface-subtle px-2 py-1.5 text-[12px] text-text-muted" role="status">
           <GripVertical size={14} strokeWidth={2} aria-hidden="true" />

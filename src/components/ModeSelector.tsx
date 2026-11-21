@@ -89,7 +89,7 @@ export const ModeSelector: React.FC<ModeSelectorProps> = ({
               openingDialog.current = false;
             }
           }}
-          className="w-60 rounded-lg border border-(--border-strong) bg-surface p-1 text-text shadow-(--modal-shadow)"
+          className="w-60 rounded-lg border border-(--glass-border) bg-(--glass) backdrop-blur-2xl backdrop-saturate-[1.7] p-1 text-text shadow-(--modal-shadow)"
         >
           <DropdownMenuLabel className="px-2 pb-1 pt-1.5 text-[11px] font-medium text-text-soft">
             Modes

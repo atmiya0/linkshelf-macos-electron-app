@@ -118,7 +118,15 @@ function createMainWindow(): BrowserWindow {
     title: 'Linkshelf',
     // macOS non-activating panel: clicking an item copies it without stealing focus
     // from the browser, so you can paste straight into the form you're filling in.
-    ...(process.platform === 'darwin' ? { type: 'panel' } : {}),
+    ...(process.platform === 'darwin'
+      ? {
+          type: 'panel',
+          // Native translucent material; stays blurred while another app is focused
+          vibrancy: 'under-window' as const,
+          visualEffectState: 'active' as const,
+          backgroundColor: '#00000000',
+        }
+      : {}),
     resizable: true,
     fullscreenable: false,
     maximizable: false,

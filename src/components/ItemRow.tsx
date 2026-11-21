@@ -66,6 +66,8 @@ export const ItemRow: React.FC<ItemRowProps> = ({
       className={cn(
         'item-row relative flex min-h-[52px] items-center rounded-lg transition-colors duration-150',
         !disabled && 'hover:bg-(--row-hover) focus-within:bg-(--row-hover)',
+        // Keyboard selection: fill the whole row, like Raycast and Spotlight
+        'has-[[data-copy-button]:focus-visible]:bg-(--row-selected) has-[[data-copy-button]:focus-visible]:shadow-[inset_0_0_0_1px_var(--row-selected-ring)]',
         copied && 'bg-[rgba(111,211,165,0.08)] hover:bg-[rgba(111,211,165,0.1)]',
         confirmingDelete && 'bg-(--row-hover)'
       )}
@@ -74,14 +76,16 @@ export const ItemRow: React.FC<ItemRowProps> = ({
       {/* The whole row copies: the biggest possible target */}
       <button
         type="button"
-        className="flex min-h-[52px] min-w-0 flex-1 items-center gap-3 self-stretch rounded-lg py-2 pl-2 pr-1 text-left outline-hidden focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent-app-soft disabled:cursor-grab"
+        data-copy-button
+        className="flex min-h-[52px] min-w-0 flex-1 items-center gap-3 self-stretch rounded-lg py-2 pl-2 pr-1 text-left outline-hidden disabled:cursor-grab"
         onClick={() => void onCopy(item)}
         disabled={disabled}
         aria-label={`Copy ${item.label}${shortcutSlot ? `, shortcut Control Option ${shortcutSlot}` : ''}`}
       >
+        {/* Type tile: one soft icon for links, one for text; becomes a check when copied */}
         <span
           className={cn(
-            'relative flex h-8 w-8 shrink-0 items-center justify-center rounded-lg transition-colors duration-150',
+            'relative flex h-8 w-8 shrink-0 items-center justify-center rounded-[9px] transition-colors duration-150',
             copied
               ? 'bg-[rgba(111,211,165,0.16)] text-success'
               : isLink
