@@ -16,7 +16,7 @@ export const Toast: React.FC<ToastProps> = ({ message, duration = 2000, onClose 
 
         const timer = setTimeout(() => {
             setIsVisible(false);
-            setTimeout(onClose, 300); // Wait for fade out animation
+            setTimeout(onClose, 200); // Wait for fade out transition
         }, duration);
 
         return () => {
@@ -26,9 +26,9 @@ export const Toast: React.FC<ToastProps> = ({ message, duration = 2000, onClose 
     }, [duration, onClose]);
 
     return (
-        <div className={`toast-container ${isVisible ? 'visible' : ''}`}>
+        <div className={`toast-container ${isVisible ? 'visible' : ''}`} role="status" aria-live="polite">
             <div className="toast-content">
-                <Check size={14} className="toast-icon" strokeWidth={2.25} />
+                <Check size={16} className="toast-icon" strokeWidth={2.5} aria-hidden="true" />
                 <span>{message}</span>
             </div>
         </div>

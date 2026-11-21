@@ -1,20 +1,21 @@
-import { app, BrowserWindow, clipboard, ipcMain } from 'electron';
+import { app, BrowserWindow, clipboard, globalShortcut, ipcMain } from 'electron';
 import * as path from 'path';
 import * as fs from 'fs';
+import { pathToFileURL } from 'url';
 import Store from 'electron-store';
 
 // Hot reload with electron-reloader in development
 try {
   if (process.env.VITE_DEV_SERVER_URL) {
     void import('electron-reloader')
-      .then((mod) => {
-        const reloader = mod.default as (
-          targetModule: NodeModule,
-          options: { debug: boolean; watchRenderer: boolean }
-        ) => void;
-        reloader(module, {
-          debug: true,
+      .then(({ default: reloader }) => {
+        // electron-reloader 2 expects `import.meta` but only reads its `url`;
+        // this main process is CommonJS, so build that from the file path.
+        reloader({ url: pathToFileURL(__filename).href } as ImportMeta, {
+          debug: false,
           watchRenderer: false, // Vite handles renderer HMR
+          // v2 watches the whole package; skip renderer sources and build output
+          ignore: [/[\\/](src|dist|electron-dist)([\\/]|$)/],
         });
       })
       .catch((error: unknown) => {
@@ -29,10 +30,12 @@ try {
 const store = new Store();
 
 // Desktop window dimensions: fixed width + clamped resizable height
-const WINDOW_WIDTH = 380;
-const DEFAULT_WINDOW_HEIGHT = 520;
-const MIN_WINDOW_HEIGHT = 420;
-const MAX_WINDOW_HEIGHT = 900;
+const WINDOW_WIDTH = 340;
+const DEFAULT_WINDOW_HEIGHT = 487;
+// Fits 4 items with both section headers: 44 title bar + 4/6 padding + 2×28 headers + 8 gap + 4×52 rows + 2 row gaps
+const MIN_WINDOW_HEIGHT = 328;
+// Fits 7 items with both section headers: 44 + 4/6 padding + 2×28 headers + 8 gap + 7×52 rows + 5 row gaps
+const MAX_WINDOW_HEIGHT = 487;
 const DEFAULT_ALWAYS_ON_TOP = true;
 const PREFERENCES_KEY = 'linkshelf-preferences';
 
@@ -82,6 +85,9 @@ function getInitialAlwaysOnTop(): boolean {
 // If a dev server URL is provided, use that. Otherwise fall back to built files.
 const distPath = path.join(__dirname, '../dist/index.html');
 const appIconPath = path.join(__dirname, '../electron/assets/icon.icns');
+// The packaged app gets its Dock icon from icon.icns; in development Electron shows its own,
+// so set the PNG explicitly.
+const dockIconPath = path.join(__dirname, '../electron/assets/icon.png');
 const devServerUrl = process.env.VITE_DEV_SERVER_URL;
 const isDev = Boolean(devServerUrl);
 
@@ -110,13 +116,16 @@ function createMainWindow(): BrowserWindow {
     maxHeight: MAX_WINDOW_HEIGHT,
     icon: appIconPath,
     title: 'Linkshelf',
+    // macOS non-activating panel: clicking an item copies it without stealing focus
+    // from the browser, so you can paste straight into the form you're filling in.
+    ...(process.platform === 'darwin' ? { type: 'panel' } : {}),
     resizable: true,
     fullscreenable: false,
     maximizable: false,
     alwaysOnTop: initialAlwaysOnTop,
     show: false,
     titleBarStyle: 'hidden',
-    trafficLightPosition: { x: 12, y: 12 },
+    trafficLightPosition: { x: 16, y: 16 },
     webPreferences: {
       nodeIntegration: true,
       contextIsolation: false,
@@ -263,9 +272,36 @@ ipcMain.handle('window:center', () => {
  * App lifecycle
  */
 
+/**
+ * Global quick-copy shortcuts: ⌃⌥1 … ⌃⌥9 copy the item at that position from any app.
+ * The renderer owns the list order, so main just forwards the index.
+ */
+const QUICK_COPY_SLOTS = 9;
+
+function registerQuickCopyShortcuts(): void {
+  for (let slot = 1; slot <= QUICK_COPY_SLOTS; slot += 1) {
+    const accelerator = `Control+Alt+${slot}`;
+    const registered = globalShortcut.register(accelerator, () => {
+      if (!mainWindow || mainWindow.isDestroyed()) return;
+      mainWindow.webContents.send('shortcut:copy-slot', slot - 1);
+    });
+    if (!registered) {
+      console.warn(`Could not register ${accelerator}; another app may be using it.`);
+    }
+  }
+}
+
+app.on('will-quit', () => {
+  globalShortcut.unregisterAll();
+});
+
 app.whenReady().then(() => {
   console.log('Linkshelf desktop app is ready');
+  registerQuickCopyShortcuts();
   console.log(`Loading from: ${indexUrl}`);
+  if (process.platform === 'darwin' && !app.isPackaged && fs.existsSync(dockIconPath)) {
+    app.dock?.setIcon(dockIconPath);
+  }
   mainWindow = createMainWindow();
 });
 

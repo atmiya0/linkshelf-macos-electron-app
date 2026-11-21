@@ -1,60 +1,28 @@
-# Menu Bar Icon
+# Icons
 
-This folder should contain the menu bar icon for Linkshelf.
+The logo is a shelf holding three items: blue for links, amber for text snippets and white for
+anything else. Those are the same colors the app uses for item types.
 
-## Required Icon
+## Sources
 
-Create a file named `iconTemplate.png` in this directory with the following specifications:
+| File | What it is |
+| --- | --- |
+| `electron/assets/logo.svg` | App icon source on the 1024px macOS grid (824px tile, 185px corner radius) |
+| `electron/assets/trayTemplate.svg` | Menu bar mark on a 22px grid, black on transparent |
 
-### Specifications
+## Generated files
 
-- **Size**: 22x22 pixels (for standard resolution)
-- **Format**: PNG with transparency
-- **Color**: Black icon on transparent background
-- **Style**: Simple, minimal design (works at small sizes)
-- **Naming**: Must end with `Template` for proper macOS dark mode support
+Run this after editing either SVG (macOS only):
 
-### Recommended Sizes
-
-For best results, provide these sizes:
-- `iconTemplate.png` - 22x22px (1x)
-- `iconTemplate@2x.png` - 44x44px (2x retina)
-
-### Design Guidelines
-
-1. Use a simple, recognizable symbol (paperclip, link, bookmark, etc.)
-2. Ensure it's visible at small sizes
-3. Black color on transparent background
-4. No text in the icon
-5. Keep it minimal and clean
-
-### Temporary Fallback
-
-Currently, the app uses an emoji (📎) as a fallback in the menu bar.
-This works for development but should be replaced with a proper icon for production.
-
-### Tools for Icon Creation
-
-- **Figma**: Design at large size, export at required dimensions
-- **Sketch**: Use built-in icon templates
-- **SF Symbols**: macOS system icons (for inspiration)
-- **ImageOptim**: Optimize PNG files
-
-### Testing
-
-After adding the icon:
-1. Restart the app
-2. Check both light and dark mode
-3. Verify visibility at menu bar size
-4. Test on retina and non-retina displays
-
-## Example Icon Code
-
-The icon is loaded in `electron/main.js`:
-
-```javascript
-const iconPath = path.join(__dirname, 'assets', 'iconTemplate.png');
-tray = new Tray(iconPath);
+```bash
+npm run icons
 ```
 
-If the icon file is missing, the app falls back to displaying text (📎) in the menu bar.
+It writes:
+
+- `electron/assets/icon.png`: the 1024px master, also used as the Dock icon in development
+- `electron/assets/icon.icns`: every macOS size from 16px to 1024px, used by electron-builder
+- `electron/assets/iconTemplate.png` and `iconTemplate@2x.png`: the 22px and 44px menu bar template images
+
+The script (`scripts/build-icons.js`) rasterizes with Electron, resizes with `sips` and packs the
+`.icns` file with `iconutil`, so it needs no extra dependencies.

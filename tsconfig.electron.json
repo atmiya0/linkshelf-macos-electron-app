@@ -3,9 +3,9 @@
   "compilerOptions": {
     "outDir": "./electron-dist",
     "rootDir": "./electron",
-    "module": "CommonJS",
+    "module": "nodenext",
     "target": "ES2020",
-    "moduleResolution": "node",
+    "moduleResolution": "nodenext",
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,
     "skipLibCheck": true,

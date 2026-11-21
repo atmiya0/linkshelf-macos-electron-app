@@ -69,7 +69,7 @@ export const SectionForm: React.FC<SectionFormProps> = ({ onSave, onCancel }) =>
                             <Button type="button" variant="ghost" className="h-9 rounded-lg bg-surface-subtle text-text-muted hover:bg-surface-hover hover:text-text" onClick={onCancel}>
                                 Cancel
                             </Button>
-                            <Button type="submit" className="h-9 rounded-lg gap-1.5 bg-accent-app text-[color:var(--btn-primary-text)] hover:bg-accent-app-press font-semibold">
+                            <Button type="submit" className="h-9 rounded-lg gap-1.5 bg-accent-app text-(--btn-primary-text) hover:bg-accent-app-press font-semibold">
                                 <Check className="h-4 w-4" /> Add Section
                             </Button>
                         </div>

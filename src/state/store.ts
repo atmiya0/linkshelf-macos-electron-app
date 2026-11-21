@@ -162,9 +162,9 @@ const STORE_KEY = 'linkshelf-data';
 const PREFERENCES_KEY = 'linkshelf-preferences';
 export const DEFAULT_THEME: ThemeMode = 'dark';
 export const DEFAULT_ALWAYS_ON_TOP = true;
-export const DEFAULT_WINDOW_HEIGHT = 520;
-export const MIN_WINDOW_HEIGHT = 420;
-export const MAX_WINDOW_HEIGHT = 900;
+export const DEFAULT_WINDOW_HEIGHT = 487;
+export const MIN_WINDOW_HEIGHT = 328; // Keep in sync with electron/main.ts: fits 4 items
+export const MAX_WINDOW_HEIGHT = 487; // Keep in sync with electron/main.ts: fits 7 items
 
 function clampWindowHeight(height: number): number {
   if (!Number.isFinite(height)) {

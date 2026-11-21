@@ -1,218 +1,97 @@
-# Linkshelf - macOS Menu Bar App
+# Linkshelf
 
-A minimal, fast, and keyboard-friendly macOS menu bar application for storing and copying links and text snippets. Built with Electron and React.
+**Paste your links into job applications without hunting for them.**
 
-## Features
+Every application asks for the same things: your LinkedIn, your GitHub, your portfolio, your phone number. Linkshelf keeps them in a small window beside your browser. Click one and it's copied. Press ⌘V and you're done.
 
-- **Menu Bar Integration**: Lives entirely in the macOS status bar
-- **Modes**: Organize items into different contexts (Job Applications, Email Writing, etc.)
-- **Quick Copy**: Click any item to instantly copy to clipboard
-- **CRUD Operations**: Add, edit, and delete items with ease
-- **Offline First**: All data stored locally on your machine
-- **No Cloud**: No authentication, no external APIs, fully private
+<img src="electron/assets/icon.png" alt="Linkshelf app icon" width="128" />
 
-## Installation
+## Why it's faster
 
-1. Clone this repository
-2. Install dependencies:
-   ```bash
-   npm install
-   ```
+- **One click to copy.** No new tab, no address bar, no select-all.
+- **You stay in the form.** Clicking Linkshelf doesn't pull you out of your browser, so you can paste right away.
+- **Or skip the mouse.** Press ⌃⌥1 to copy your first item, ⌃⌥2 for the second, up to ⌃⌥9. This works from any app.
+- **It stays in view.** The window floats above your other windows, so it's there when you need it. You can turn this off in settings.
 
-3. Start the development server:
-   ```bash
-   npm start
-   ```
+## What you can save
 
-## Building for Production
+- **Links:** your LinkedIn, GitHub, portfolio, a résumé link
+- **Text:** your phone number, email, address, or a short answer you give often
 
-To create a distributable macOS app:
+Group them into **modes**, such as "Job hunt" or "Freelance", and switch between them from the title bar.
+
+## Shortcuts
+
+| Press | To |
+| --- | --- |
+| ⌃⌥1 … ⌃⌥9 | Copy item 1–9, from any app |
+| ⌘N | Add an item |
+| ⌘↵ | Save the item you're editing |
+| ⌘, | Open settings |
+| Esc | Close a dialog, or finish reordering |
+
+Each row shows its shortcut on the right.
+
+## Your data stays on your Mac
+
+There's no account and no cloud. Linkshelf doesn't connect to the internet. Everything is saved in one file on your Mac:
+
+```
+~/Library/Application Support/Linkshelf/config.json
+```
+
+When you run the app from source, the folder is called `linkshelf-menubar-macos` instead.
+
+## Get started
+
+You'll need a Mac and [Node.js](https://nodejs.org) 22.12 or newer.
+
+```bash
+npm install
+```
+
+```bash
+npm start
+```
+
+The window opens with a few starter items. Edit or delete them, then add your own with **+**.
+
+## Build the app
 
 ```bash
 npm run package
 ```
 
-This will create a `.dmg` file in the `dist` folder.
+This creates a `.dmg` installer in the `dist` folder.
 
-## Project Structure
+## For developers
+
+| Command | What it does |
+| --- | --- |
+| `npm start` | Runs the app with live reload |
+| `npm run build` | Builds the interface into `dist` |
+| `npm run build:electron` | Compiles the main process into `electron-dist` |
+| `npm run package` | Builds a `.dmg` installer |
+| `npm run lint` | Checks the code |
+| `npm run icons` | Regenerates the app icons from `electron/assets/logo.svg` |
+
+**Built with** Electron, React, TypeScript, Vite, Tailwind CSS and the [Allo](https://allo.joshpuckett.me) typeface.
+
+**Where things are:**
 
 ```
-linkshelf-menubar-macos/
-├── electron/
-│   └── main.js              # Electron main process
-├── src/
-│   ├── components/          # React components
-│   │   ├── MenuBarWindow.tsx   # Main window container
-│   │   ├── ModeSelector.tsx    # Mode dropdown
-│   │   ├── ItemList.tsx        # List of items
-│   │   ├── ItemRow.tsx         # Individual item
-│   │   └── ItemForm.tsx        # Add/edit form
-│   ├── hooks/
-│   │   └── useStore.ts      # State management hook
-│   ├── state/
-│   │   └── store.ts         # Data persistence layer
-│   ├── types/
-│   │   └── index.ts         # TypeScript types
-│   ├── styles/
-│   │   └── App.css          # Application styles
-│   ├── App.tsx              # Root component
-│   └── index.tsx            # React entry point
-├── public/
-│   └── index.html           # HTML template
-└── package.json
-```
-
-## Usage
-
-### Basic Usage
-
-1. Click the 📎 icon in your menu bar to open Linkshelf
-2. Select a mode from the dropdown (e.g., "Job Applications")
-3. Click any item to copy it to your clipboard
-4. Click "+ Add Item" to create a new item
-
-### Adding Items
-
-1. Click "+ Add Item"
-2. Enter a label (e.g., "Portfolio")
-3. Select type (Link or Text)
-4. Enter the URL or text content
-5. Press "Add Item" or use `⌘ Enter`
-
-### Editing Items
-
-1. Hover over an item
-2. Click the ✏️ edit button
-3. Make your changes
-4. Press "Save Changes"
-
-### Deleting Items
-
-1. Hover over an item
-2. Click the 🗑️ delete button
-3. Click again to confirm
-
-### Keyboard Shortcuts
-
-- `Esc`: Close modal/form
-- `⌘ Enter`: Save form (when adding/editing)
-
-## Data Storage
-
-All data is stored locally using `electron-store`, which saves to:
-```
-~/Library/Application Support/linkshelf-menubar-macos/config.json
-```
-
-The data structure is simple JSON:
-```json
-{
-  "currentModeId": "job-applications",
-  "modes": [
-    {
-      "id": "job-applications",
-      "name": "Job Applications",
-      "items": [
-        {
-          "id": "1",
-          "label": "Portfolio",
-          "value": "https://myportfolio.com",
-          "type": "link",
-          "createdAt": 1234567890,
-          "updatedAt": 1234567890
-        }
-      ]
-    }
-  ]
-}
-```
-
-## Future Enhancements
-
-The codebase includes comments marking locations where future features can be added:
-
-### Planned Features (Not Yet Implemented)
-
-- **Search**: Filter items by label or value
-- **Keyboard Shortcuts**: 
-  - `Cmd+N` for new item
-  - Number keys for quick copy
-  - Arrow keys for navigation
-- **AI-Assisted Modes**: Smart suggestions and auto-categorization
-- **Export/Import**: Share modes via JSON files
-- **Statistics**: Track most-used items
-- **Mode Management**: Add/delete/rename modes
-
-### Explicitly Excluded Features
-
-The following features are intentionally not included:
-- Cloud sync
-- Authentication
-- Analytics/tracking
-- Sharing via cloud
-- External APIs
-- Tags or categories beyond modes
-
-## Technology Stack
-
-- **Electron**: macOS menu bar integration
-- **React**: UI components
-- **TypeScript**: Type safety
-- **Vite**: Fast development and building
-- **electron-store**: Local data persistence
-
-## Development
-
-### Prerequisites
-
-- Node.js 18+
-- npm or yarn
-- macOS (for menu bar features)
-
-### Development Scripts
-
-- `npm start`: Start development server
-- `npm run build`: Build for production
-- `npm run package`: Create distributable app
-
-### Adding New Modes
-
-To add more default modes, edit `src/types/index.ts` and add to the `DEFAULT_MODES` array:
-
-```typescript
-{
-  id: 'my-new-mode',
-  name: 'My New Mode',
-  items: [],
-}
+electron/        The app window, shortcuts and storage (main process)
+  assets/        Icons and their SVG sources
+src/
+  components/    The interface: list, rows, dialogs, menus
+  hooks/         State for modes and items
+  lib/           Small helpers, like item order for shortcuts
+  state/         Saving and loading data
+  styles/        Colors, fonts and layout
+  types/         Data types and the starter items
+scripts/         Icon generator
 ```
 
 ## License
 
 MIT
-
-## Contributing
-
-This is a personal project, but suggestions and improvements are welcome!
-
-## Known Issues
-
-- Menu bar icon currently uses emoji (📎). For production, replace with a proper icon file.
-- DevTools are commented out in development. Uncomment in `electron/main.js` if needed.
-
-## Documentation
-
-Comprehensive documentation is available in the [`docs/`](./docs/) folder:
-
-- **[Quick Start Guide](./docs/QUICKSTART.md)** - Get started in 5 minutes
-- **[Architecture](./docs/ARCHITECTURE.md)** - System design and technical details
-- **[Development Guide](./docs/DEVELOPMENT.md)** - Developer workflows and debugging
-- **[Changelog](./docs/CHANGELOG.md)** - Version history and release notes
-- **[Project Summary](./docs/PROJECT_SUMMARY.md)** - Complete project overview
-- **[TODO](./docs/TODO.md)** - Future enhancements and roadmap
-- **[File Tree](./docs/FILE_TREE.txt)** - Project structure reference
-- **[Icon Guide](./docs/ICON.md)** - Menu bar icon specifications
-
-## Support
-
-For issues or questions, please open an issue on GitHub.

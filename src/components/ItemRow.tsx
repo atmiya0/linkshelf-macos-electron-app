@@ -1,119 +1,169 @@
-import React, { useState } from 'react';
-import { AlertTriangle, Check, Copy, FileText, Link2, Pencil, Trash2 } from 'lucide-react';
+import React, { useEffect, useRef, useState } from 'react';
+import { Check, FileText, Link2, Pencil, Trash2 } from 'lucide-react';
 import { LinkshelfItem } from '../types';
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 interface ItemRowProps {
   item: LinkshelfItem;
-  onCopy: (value: string, type: string, label: string) => void | Promise<void>;
+  /** 1–9 when the item can be copied with ⌃⌥ + number from any app */
+  shortcutSlot?: number;
+  /** True for a moment after this item was copied, by click or by shortcut */
+  copied: boolean;
+  onCopy: (item: LinkshelfItem) => void | Promise<void>;
   onEdit: (item: LinkshelfItem) => void;
   onDelete: (itemId: string) => void;
+  disabled?: boolean;
 }
+
+/** Links read better without the protocol; text snippets collapse to one line. */
+const formatPreview = (item: LinkshelfItem): string => {
+  if (item.type === 'link') {
+    return item.value.replace(/^https?:\/\/(www\.)?/i, '').replace(/\/$/, '');
+  }
+  return item.value.replace(/\s+/g, ' ').trim();
+};
+
+const iconSwap =
+  'absolute inset-0 m-auto transition-[opacity,transform,filter] duration-300 [transition-timing-function:cubic-bezier(0.2,0,0,1)] motion-reduce:transition-opacity';
+
+const actionButton =
+  'h-8 w-8 rounded-md focus-visible:ring-2 focus-visible:ring-accent-app-soft focus-visible:ring-offset-0 [&_svg]:size-4';
 
 export const ItemRow: React.FC<ItemRowProps> = ({
   item,
+  shortcutSlot,
+  copied,
   onCopy,
   onEdit,
   onDelete,
+  disabled = false,
 }) => {
-  const [copied, setCopied] = useState(false);
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
+  const deleteTimer = useRef<number | null>(null);
 
-  const handleCopy = async () => {
-    await onCopy(item.value, item.type, item.label);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 1200);
-  };
+  useEffect(() => () => {
+    if (deleteTimer.current) window.clearTimeout(deleteTimer.current);
+  }, []);
 
   const handleDelete = () => {
-    if (showDeleteConfirm) {
+    if (confirmingDelete) {
+      if (deleteTimer.current) window.clearTimeout(deleteTimer.current);
+      setConfirmingDelete(false);
       onDelete(item.id);
-      setShowDeleteConfirm(false);
-    } else {
-      setShowDeleteConfirm(true);
-      setTimeout(() => setShowDeleteConfirm(false), 3000);
+      return;
     }
+    setConfirmingDelete(true);
+    if (deleteTimer.current) window.clearTimeout(deleteTimer.current);
+    deleteTimer.current = window.setTimeout(() => setConfirmingDelete(false), 3000);
   };
 
+  const isLink = item.type === 'link';
+  const KindIcon = isLink ? Link2 : FileText;
+
   return (
-    <li
-      className="group flex items-center gap-1.5 rounded-lg bg-[var(--item-row-bg)] hover:bg-surface-hover/35 border border-[var(--item-row-border)] hover:border-[var(--border-strong)] transition-all duration-200 hover:-translate-y-[1px] hover:shadow-lg hover:shadow-black/5 min-h-[48px]"
+    <div
+      className={cn(
+        'item-row relative flex min-h-[52px] items-center rounded-lg transition-colors duration-150',
+        !disabled && 'hover:bg-(--row-hover) focus-within:bg-(--row-hover)',
+        copied && 'bg-[rgba(111,211,165,0.08)] hover:bg-[rgba(111,211,165,0.1)]',
+        confirmingDelete && 'bg-(--row-hover)'
+      )}
       data-item-type={item.type}
     >
-      {/* Main clickable area */}
+      {/* The whole row copies: the biggest possible target */}
       <button
         type="button"
-        className="flex-1 min-w-0 border-none bg-transparent py-3 pl-4 pr-0 cursor-pointer flex items-center justify-between gap-3 text-left focus-visible:outline-2 focus-visible:outline-accent-app-soft focus-visible:-outline-offset-2 focus-visible:rounded-lg"
-        onClick={() => void handleCopy()}
-        aria-label={`Copy ${item.type} item: ${item.label}`}
+        className="flex min-h-[52px] min-w-0 flex-1 items-center gap-3 self-stretch rounded-lg py-2 pl-2 pr-1 text-left outline-hidden focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent-app-soft disabled:cursor-grab"
+        onClick={() => void onCopy(item)}
+        disabled={disabled}
+        aria-label={`Copy ${item.label}${shortcutSlot ? `, shortcut Control Option ${shortcutSlot}` : ''}`}
       >
-        <div className="flex-1 min-w-0">
-          {/* Label row */}
-          <div className="flex items-center gap-2 mb-1">
-            <span className="text-sm font-bold text-text truncate tracking-tight" style={{ fontFamily: 'Outfit, sans-serif' }} title={item.label}>
-              {item.label}
-            </span>
-            <span
-              className={cn(
-                "shrink-0 h-[18px] px-1.5 rounded-md text-[10px] font-bold uppercase tracking-wider inline-flex items-center",
-                item.type === 'link'
-                  ? "bg-[var(--item-kind-link-bg)] text-[var(--item-kind-link-color)]"
-                  : "bg-[var(--item-kind-text-bg)] text-[var(--item-kind-text-color)]"
-              )}
-            >
-              {item.type === 'link' ? 'Link' : 'Text'}
-            </span>
-          </div>
-          {/* Value row */}
-          <div className="flex items-center gap-1.5 min-w-0 text-xs text-text-soft">
-            <span className="inline-flex shrink-0 text-text-muted">
-              {item.type === 'link' ? <Link2 size={11} strokeWidth={2.5} /> : <FileText size={11} strokeWidth={2.5} />}
-            </span>
-            <span className={cn("truncate text-text-muted", item.type === 'link' && "text-[var(--link-text)] font-medium")} title={item.value}>
-              {item.value}
-            </span>
-          </div>
-        </div>
+        <span
+          className={cn(
+            'relative flex h-8 w-8 shrink-0 items-center justify-center rounded-lg transition-colors duration-150',
+            copied
+              ? 'bg-[rgba(111,211,165,0.16)] text-success'
+              : isLink
+                ? 'bg-(--item-kind-link-bg) text-(--item-kind-link-color)'
+                : 'bg-(--item-kind-text-bg) text-(--item-kind-text-color)'
+          )}
+          aria-hidden="true"
+        >
+          <KindIcon
+            size={16}
+            strokeWidth={2}
+            className={cn(iconSwap, copied ? 'scale-[0.25] opacity-0 blur-[4px]' : 'scale-100 opacity-100 blur-0')}
+          />
+          <Check
+            size={16}
+            strokeWidth={2.5}
+            className={cn(iconSwap, copied ? 'scale-100 opacity-100 blur-0' : 'scale-[0.25] opacity-0 blur-[4px]')}
+          />
+        </span>
 
+        <span className="flex min-w-0 flex-1 flex-col gap-px">
+          <span className="truncate text-[14px] font-medium leading-[18px] text-text" title={item.label}>
+            {item.label}
+          </span>
+          <span
+            className={cn(
+              'truncate text-[12px] leading-4',
+              copied ? 'text-success' : isLink ? 'text-(--link-text)' : 'text-text-soft'
+            )}
+            title={item.value}
+          >
+            {copied ? 'Copied. Paste with ⌘V' : formatPreview(item)}
+          </span>
+        </span>
       </button>
 
-      {/* Action buttons */}
-      <div className="flex gap-1 pr-3 items-center opacity-0 group-hover:opacity-100 transition-all duration-200 translate-x-2 group-hover:translate-x-0">
-        <Button
-          variant="ghost"
-          size="icon"
-          className={cn(
-            "h-7 w-7 rounded-lg bg-surface-subtle/40 hover:bg-surface-pressed text-text-soft hover:text-text transition-colors",
-            copied && "bg-success/15 text-success hover:bg-success/20 hover:text-success"
+      {/* Shortcut hint; swaps with the edit/delete actions on hover */}
+      {!disabled && shortcutSlot && (
+        <kbd
+          className="item-shortcut pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 font-sans text-[11px] font-medium tabular-nums tracking-wide text-text-soft"
+          aria-hidden="true"
+        >
+          ⌃⌥{shortcutSlot}
+        </kbd>
+      )}
+
+      {!disabled && (
+        <div
+          className="item-actions flex shrink-0 items-center gap-0.5 pr-1.5"
+          data-pinned={confirmingDelete ? 'true' : 'false'}
+        >
+          {!confirmingDelete && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className={cn(actionButton, 'text-text-soft hover:bg-surface-hover hover:text-text')}
+              onClick={() => onEdit(item)}
+              aria-label={`Edit ${item.label}`}
+              title="Edit"
+            >
+              <Pencil strokeWidth={2} />
+            </Button>
           )}
-          onClick={() => void handleCopy()}
-          title={`Copy ${item.label}`}
-        >
-          {copied ? <Check size={11} strokeWidth={2.75} /> : <Copy size={11} strokeWidth={2.25} />}
-        </Button>
-        <Button
-          variant="ghost"
-          size="icon"
-          className="h-7 w-7 rounded-lg bg-surface-subtle/40 hover:bg-surface-pressed text-text-soft hover:text-text transition-colors"
-          onClick={() => onEdit(item)}
-          title={`Edit ${item.label}`}
-        >
-          <Pencil size={11} strokeWidth={2.5} />
-        </Button>
-        <Button
-          variant="ghost"
-          size="icon"
-          className={cn(
-            "h-7 w-7 rounded-lg bg-surface-subtle/40 hover:bg-surface-pressed text-text-soft hover:text-text transition-colors",
-            showDeleteConfirm && "bg-danger-soft text-danger hover:bg-danger-soft hover:text-danger animate-pulse"
-          )}
-          onClick={handleDelete}
-          title={showDeleteConfirm ? 'Confirm delete' : 'Delete item'}
-        >
-          {showDeleteConfirm ? <AlertTriangle size={11} strokeWidth={2.5} /> : <Trash2 size={11} strokeWidth={2.5} />}
-        </Button>
-      </div>
-    </li>
+          <Button
+            variant="ghost"
+            size={confirmingDelete ? 'sm' : 'icon'}
+            className={cn(
+              actionButton,
+              confirmingDelete
+                ? 'w-auto gap-1 px-2.5 text-[12px] font-medium bg-danger-soft text-danger hover:bg-danger-soft hover:text-danger'
+                : 'text-text-soft hover:bg-danger-soft hover:text-danger'
+            )}
+            onClick={handleDelete}
+            onBlur={() => setConfirmingDelete(false)}
+            aria-label={confirmingDelete ? `Confirm delete ${item.label}` : `Delete ${item.label}`}
+            title={confirmingDelete ? 'Click again to delete' : 'Delete'}
+          >
+            <Trash2 strokeWidth={2} />
+            {confirmingDelete && 'Delete'}
+          </Button>
+        </div>
+      )}
+    </div>
   );
 };

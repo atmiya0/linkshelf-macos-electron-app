@@ -1,6 +1,6 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import '@fontsource/google-sans/latin.css';
+import 'allo-font/allo.css';
 import App from './App';
 
 const root = ReactDOM.createRoot(

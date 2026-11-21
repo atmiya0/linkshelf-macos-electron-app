@@ -1,179 +1,174 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { Check, Plus, Trash2, X } from 'lucide-react';
+import React, { useRef, useState } from 'react';
+import { Check, ChevronsUpDown, Plus } from 'lucide-react';
 import { Mode } from '../types';
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { cn } from "@/lib/utils";
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { cn } from '@/lib/utils';
 
 interface ModeSelectorProps {
   modes: Mode[];
   currentModeId: string;
   onModeChange: (modeId: string) => void;
   onModeAdd: (modeName: string) => void | Promise<void>;
-  onModeDelete: (modeId: string) => void | Promise<void>;
-  canDeleteMode: boolean;
 }
+
+const menuItem =
+  'flex h-8 cursor-default items-center gap-2 rounded-md px-2 text-[13px] text-text outline-hidden transition-colors duration-150 focus:bg-surface-hover data-highlighted:bg-surface-hover [&_svg]:size-4';
 
 export const ModeSelector: React.FC<ModeSelectorProps> = ({
   modes,
   currentModeId,
   onModeChange,
   onModeAdd,
-  onModeDelete,
-  canDeleteMode,
 }) => {
   const [isAddingMode, setIsAddingMode] = useState(false);
   const [newModeName, setNewModeName] = useState('');
   const [modeError, setModeError] = useState<string | null>(null);
-  const [confirmDelete, setConfirmDelete] = useState(false);
-  const modeInputRef = useRef<HTMLInputElement | null>(null);
-  const deleteTimeoutRef = useRef<number | null>(null);
+  // Opening the dialog from a menu item: stop the closing menu from pulling focus back to its trigger
+  const openingDialog = useRef(false);
 
-  useEffect(() => {
-    if (isAddingMode) {
-      modeInputRef.current?.focus();
-    }
-  }, [isAddingMode]);
+  const currentMode = modes.find((mode) => mode.id === currentModeId);
 
-  useEffect(() => {
-    setConfirmDelete(false);
-  }, [currentModeId]);
-
-  useEffect(() => {
-    return () => {
-      if (deleteTimeoutRef.current) {
-        window.clearTimeout(deleteTimeoutRef.current);
-      }
-    };
-  }, []);
+  const closeAddDialog = () => {
+    setIsAddingMode(false);
+    setNewModeName('');
+    setModeError(null);
+  };
 
   const handleCreateMode = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const trimmedName = newModeName.trim();
-
     if (!trimmedName) {
-      setModeError('Mode name is required');
+      setModeError('Give the mode a name.');
       return;
     }
-
     try {
       await onModeAdd(trimmedName);
-      setNewModeName('');
-      setModeError(null);
-      setIsAddingMode(false);
+      closeAddDialog();
     } catch (error) {
-      setModeError(error instanceof Error ? error.message : 'Failed to create mode');
+      setModeError(error instanceof Error ? error.message : 'Couldn’t create the mode. Try again.');
     }
   };
-
-  const handleDeleteMode = async () => {
-    setModeError(null);
-
-    if (!canDeleteMode) return;
-
-    if (!confirmDelete) {
-      setConfirmDelete(true);
-      if (deleteTimeoutRef.current) {
-        window.clearTimeout(deleteTimeoutRef.current);
-      }
-      deleteTimeoutRef.current = window.setTimeout(() => {
-        setConfirmDelete(false);
-      }, 2500);
-      return;
-    }
-
-    try {
-      await onModeDelete(currentModeId);
-      setConfirmDelete(false);
-      if (deleteTimeoutRef.current) {
-        window.clearTimeout(deleteTimeoutRef.current);
-      }
-    } catch (error) {
-      setModeError(error instanceof Error ? error.message : 'Failed to delete mode');
-    }
-  };
-
-  const getModeLabel = (name: string): string => name;
 
   return (
-    <div className="flex flex-col gap-1.5 w-full">
-      <div className="flex items-center gap-1.5 w-full">
-        <div className="flex-1">
-          <Select value={currentModeId} onValueChange={onModeChange}>
-            <SelectTrigger className="w-full h-9 rounded-lg bg-surface-subtle border-none text-text text-sm font-semibold focus:ring-1 focus:ring-accent-app-soft hover:bg-surface-hover transition-colors">
-              <SelectValue placeholder="Select mode" />
-            </SelectTrigger>
-            <SelectContent className="bg-surface border-none shadow-xl rounded-lg">
-              {modes.map((mode) => (
-                <SelectItem key={mode.id} value={mode.id} className="text-sm text-text focus:bg-surface-hover focus:text-text">
-                  {getModeLabel(mode.name)}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-        <div className="flex items-center gap-1.5">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-9 w-9 rounded-lg bg-surface-subtle hover:bg-surface-hover text-text-muted hover:text-text transition-colors"
-            onClick={() => { setIsAddingMode(true); setConfirmDelete(false); }}
-            title="Add mode"
+    <>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <button
+            type="button"
+            className="press-scale flex h-8 min-w-0 max-w-full items-center gap-1.5 rounded-md px-2 text-[14px] font-semibold text-text outline-hidden transition-colors duration-150 hover:bg-surface-subtle focus-visible:ring-2 focus-visible:ring-accent-app-soft data-[state=open]:bg-surface-subtle"
+            aria-label={`Mode: ${currentMode?.name ?? 'none'}. Switch mode`}
           >
-            <Plus size={14} strokeWidth={2.25} />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            disabled={!canDeleteMode}
-            className={cn(
-              "h-9 w-9 rounded-lg bg-surface-subtle hover:bg-surface-hover text-text-muted hover:text-text transition-colors",
-              confirmDelete && "bg-danger-soft text-danger hover:bg-danger-soft hover:text-danger animate-pulse"
-            )}
-            onClick={() => void handleDeleteMode()}
-            title={confirmDelete ? 'Click again to confirm' : 'Delete mode'}
-          >
-            <Trash2 size={14} strokeWidth={2.25} />
-          </Button>
-        </div>
-      </div>
+            <span className="truncate">{currentMode?.name ?? 'Choose a mode'}</span>
+            <ChevronsUpDown size={14} strokeWidth={2} className="shrink-0 text-text-soft" aria-hidden="true" />
+          </button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent
+          align="start"
+          sideOffset={6}
+          onCloseAutoFocus={(event) => {
+            if (openingDialog.current) {
+              event.preventDefault();
+              openingDialog.current = false;
+            }
+          }}
+          className="w-60 rounded-lg border border-(--border-strong) bg-surface p-1 text-text shadow-(--modal-shadow)"
+        >
+          <DropdownMenuLabel className="px-2 pb-1 pt-1.5 text-[11px] font-medium text-text-soft">
+            Modes
+          </DropdownMenuLabel>
+          {modes.map((mode) => {
+            const selected = mode.id === currentModeId;
+            return (
+              <DropdownMenuItem
+                key={mode.id}
+                className={menuItem}
+                onSelect={() => onModeChange(mode.id)}
+              >
+                <span className="flex w-4 justify-center text-text">
+                  {selected && <Check strokeWidth={2.5} aria-hidden="true" />}
+                </span>
+                <span className={cn('min-w-0 flex-1 truncate', selected && 'font-medium')}>{mode.name}</span>
+                <span className="tabular-nums text-[12px] text-text-soft">{mode.items.length}</span>
+              </DropdownMenuItem>
+            );
+          })}
+          <DropdownMenuSeparator className="mx-1 my-1 bg-(--item-row-border)" />
+          <DropdownMenuItem className={cn(menuItem, 'text-text-muted')} onSelect={() => {
+              openingDialog.current = true;
+              setIsAddingMode(true);
+            }}>
+            <Plus strokeWidth={2} aria-hidden="true" />
+            New mode…
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
 
-      {isAddingMode && (
-        <form className="flex items-center gap-1.5 rounded-lg bg-surface-subtle p-1" onSubmit={(event) => void handleCreateMode(event)}>
-          <Input
-            ref={modeInputRef}
-            className="h-7 flex-1 text-xs bg-transparent border-none text-text focus-visible:ring-0 placeholder:text-text-soft"
-            placeholder="New mode name"
-            value={newModeName}
-            onChange={(event) => setNewModeName(event.target.value)}
-          />
-          <div className="flex gap-0.5">
-            <Button type="submit" variant="ghost" size="icon" className="h-7 w-7 rounded-md text-success hover:bg-success/10">
-              <Check size={14} strokeWidth={2.25} />
-            </Button>
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              className="h-7 w-7 rounded-md text-text-muted hover:bg-surface-hover"
-              onClick={() => { setIsAddingMode(false); setNewModeName(''); setModeError(null); }}
-            >
-              <X size={14} strokeWidth={2.25} />
-            </Button>
-          </div>
-        </form>
-      )}
-
-      {modeError && (
-        <p className="text-[10px] text-danger px-1">{modeError}</p>
-      )}
-    </div>
+      <Dialog open={isAddingMode} onOpenChange={(open) => !open && closeAddDialog()}>
+        <DialogContent className="max-w-[320px] p-0">
+          <DialogHeader>
+            <DialogTitle>New mode</DialogTitle>
+            <DialogDescription>Group items for one context, like a job hunt or support replies.</DialogDescription>
+          </DialogHeader>
+          <form onSubmit={(event) => void handleCreateMode(event)} noValidate>
+            <div className="grid gap-1.5 px-5 py-4">
+              <Label htmlFor="new-mode-name" className="text-[12px] font-medium text-text-muted">Name</Label>
+              <Input
+                id="new-mode-name"
+                autoFocus
+                className={cn(
+                  'h-9 rounded-lg border border-(--border-strong) bg-(--bg) px-3 text-[14px] text-text placeholder:text-text-soft focus-visible:border-transparent focus-visible:ring-2 focus-visible:ring-accent-app-soft focus-visible:ring-offset-0',
+                  modeError && 'border-danger'
+                )}
+                placeholder="Job hunt"
+                value={newModeName}
+                aria-invalid={!!modeError}
+                aria-describedby={modeError ? 'new-mode-error' : undefined}
+                onChange={(event) => {
+                  setNewModeName(event.target.value);
+                  if (modeError) setModeError(null);
+                }}
+              />
+              {modeError && (
+                <p id="new-mode-error" className="text-[12px] text-danger" role="alert">{modeError}</p>
+              )}
+            </div>
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="ghost"
+                className="h-8 rounded-md px-3 text-[13px] text-text-muted hover:bg-surface-subtle hover:text-text focus-visible:ring-2 focus-visible:ring-accent-app-soft focus-visible:ring-offset-0"
+                onClick={closeAddDialog}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                className="press-scale h-8 rounded-md bg-accent-app px-3 text-[13px] font-semibold text-(--btn-primary-text) hover:bg-accent-app-press focus-visible:ring-2 focus-visible:ring-accent-app-soft focus-visible:ring-offset-2 focus-visible:ring-offset-surface"
+              >
+                Create mode
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 };

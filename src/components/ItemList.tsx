@@ -1,34 +1,46 @@
 import { useRef, useState } from 'react';
 import { LinkshelfItem } from '../types';
 import { ItemRow } from './ItemRow';
-import { ArrowUpDown, FolderPlus, GripVertical } from 'lucide-react';
+import { GripVertical, Inbox, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import { QUICK_COPY_SLOTS, getDisplayOrder } from '@/lib/items';
 
 interface ItemListProps {
   items: LinkshelfItem[];
-  onCopy: (value: string, type: string, label: string) => void | Promise<void>;
+  modeName: string;
+  isReordering: boolean;
+  onAddItem: () => void;
+  copiedId: string | null;
+  onCopy: (item: LinkshelfItem) => void | Promise<void>;
   onEdit: (item: LinkshelfItem) => void;
   onDelete: (itemId: string) => void;
   onReorderItems: (itemIds: string[]) => void;
-  onAddItem: () => void;
 }
 
 export const ItemList: React.FC<ItemListProps> = ({
   items,
+  modeName,
+  isReordering,
+  onAddItem,
+  copiedId,
   onCopy,
   onEdit,
   onDelete,
   onReorderItems,
-  onAddItem,
 }) => {
-  const [isReordering, setIsReordering] = useState(false);
   const [dragOverId, setDragOverId] = useState<string | null>(null);
   const dragItemId = useRef<string | null>(null);
 
   const sortedItems = [...items].sort((a, b) => a.order - b.order);
   const linkItems = sortedItems.filter((item) => item.type === 'link');
   const textItems = sortedItems.filter((item) => item.type === 'text');
+  // Shortcut slot for each item, matching the on-screen order (⌃⌥1 is the top row)
+  const slotById = new Map(
+    getDisplayOrder(items)
+      .slice(0, QUICK_COPY_SLOTS)
+      .map((item, index) => [item.id, index + 1] as const)
+  );
 
   const handleItemDragStart = (event: React.DragEvent, itemId: string) => {
     if (!isReordering) return;
@@ -72,12 +84,12 @@ export const ItemList: React.FC<ItemListProps> = ({
   };
 
   const renderItem = (item: LinkshelfItem) => (
-    <div
+    <li
       key={item.id}
       className={cn(
-        'item-row-container flex items-center gap-2 transition-all duration-200',
+        'item-row-container flex items-center gap-0.5 rounded-lg transition-[box-shadow,opacity] duration-150',
         isReordering && 'cursor-grab active:cursor-grabbing',
-        dragOverId === item.id && 'border-t-2 border-accent-app -mt-[2px]'
+        dragOverId === item.id && 'shadow-[0_-2px_0_0_var(--app-accent)]'
       )}
       draggable={isReordering}
       onDragStart={(event) => handleItemDragStart(event, item.id)}
@@ -87,90 +99,76 @@ export const ItemList: React.FC<ItemListProps> = ({
       onDragLeave={() => setDragOverId(null)}
     >
       {isReordering && (
-        <div className="pl-1 opacity-60">
-          <GripVertical size={14} strokeWidth={2.5} className="text-text-soft cursor-grab" />
-        </div>
+        <GripVertical size={16} strokeWidth={2} className="-ml-0.5 shrink-0 text-text-soft" aria-hidden="true" />
       )}
-      <div className="flex-1 min-w-0">
+      <div className="min-w-0 flex-1">
         <ItemRow
           item={item}
+          shortcutSlot={slotById.get(item.id)}
+          copied={copiedId === item.id}
           onCopy={onCopy}
           onEdit={onEdit}
           onDelete={onDelete}
+          disabled={isReordering}
         />
       </div>
-    </div>
+    </li>
   );
+
+  const renderGroup = (title: string, groupItems: LinkshelfItem[]) => {
+    if (groupItems.length === 0) return null;
+    const headingId = `group-${title.toLowerCase()}`;
+    return (
+      <section className="flex flex-col" aria-labelledby={headingId}>
+        <h2
+          id={headingId}
+          className="flex h-7 items-center gap-1.5 px-2 text-[12px] font-medium text-text-soft"
+        >
+          {title}
+          <span className="tabular-nums opacity-70">{groupItems.length}</span>
+        </h2>
+        <ul className="flex flex-col gap-px">
+          {groupItems.map(renderItem)}
+        </ul>
+      </section>
+    );
+  };
 
   if (items.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center py-20 px-6 text-center" role="status" aria-live="polite">
-        <div className="w-16 h-16 rounded-3xl bg-surface-subtle/30 flex items-center justify-center text-text-soft opacity-20 mb-6">
-          <FolderPlus size={32} strokeWidth={1.5} />
+      <div className="flex h-full flex-col items-center justify-center px-6 py-10 text-center">
+        <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-surface-subtle text-text-soft">
+          <Inbox size={22} strokeWidth={1.75} aria-hidden="true" />
         </div>
-        <p className="text-base font-bold text-text mb-2 tracking-tight" style={{ fontFamily: 'Outfit, sans-serif' }}>
-          Welcome to Linkshelf
+        <p className="mb-1 text-[15px] font-semibold text-text text-balance">
+          {modeName} is empty
         </p>
-        <p className="text-xs text-text-soft mb-8 max-w-[220px] leading-relaxed">
-          Add your first link or text snippet.
+        <p className="mb-5 max-w-[220px] text-[13px] leading-relaxed text-text-soft text-pretty">
+          Save the links and answers you paste into applications. Click one to copy it.
         </p>
         <Button
-          variant="outline"
-          size="sm"
-          className="h-9 px-6 rounded-full bg-accent-app text-[color:var(--btn-primary-text)] border-none hover:bg-accent-app-press transition-all"
+          className="press-scale h-8 gap-1.5 rounded-md bg-accent-app px-3 text-[13px] font-semibold text-(--btn-primary-text) hover:bg-accent-app-press focus-visible:ring-2 focus-visible:ring-accent-app-soft focus-visible:ring-offset-2 focus-visible:ring-offset-(--bg) [&_svg]:size-4"
           onClick={onAddItem}
         >
-          Add First Item
+          <Plus strokeWidth={2.5} />
+          Add item
+          <kbd className="ml-1 font-sans text-[11px] font-medium opacity-60">⌘N</kbd>
         </Button>
       </div>
     );
   }
 
   return (
-    <div className="flex flex-col gap-4">
-      <div className="sticky top-0 z-10 flex items-center justify-end rounded-lg border border-[var(--border-strong)] bg-[var(--header-bg)]/95 px-3 py-2 backdrop-blur-xl">
-        <p className="mr-auto text-xs text-text-muted">
-          {`${items.length} item${items.length === 1 ? '' : 's'}`}
+    <div className="flex flex-col gap-1.5">
+      {isReordering && (
+        <p className="flex items-center gap-1.5 rounded-md bg-surface-subtle px-2 py-1.5 text-[12px] text-text-muted" role="status">
+          <GripVertical size={14} strokeWidth={2} aria-hidden="true" />
+          Drag to reorder. Press Esc when done.
         </p>
-        <Button
-          variant="ghost"
-          size="sm"
-          className={cn(
-            'h-8 rounded-lg px-3 text-[11px] font-semibold tracking-wide',
-            isReordering
-              ? 'bg-accent-app text-[color:var(--btn-primary-text)] hover:bg-accent-app-press'
-              : 'bg-surface-subtle text-text-muted hover:bg-surface-hover hover:text-text'
-          )}
-          onClick={() => setIsReordering((prev) => !prev)}
-          title="Reorder items"
-        >
-          <ArrowUpDown size={12} strokeWidth={2.5} className="mr-1.5" />
-          {isReordering ? 'Done' : 'Reorder'}
-        </Button>
-      </div>
-
-      <div className="flex flex-col gap-4 pb-2" role="list">
-        {linkItems.length > 0 && (
-          <div className="flex flex-col gap-3">
-            <div className="px-2">
-              <span className="text-[10px] font-bold uppercase tracking-[0.1em] text-text-soft">Links</span>
-            </div>
-            <div className="flex flex-col gap-2">
-              {linkItems.map(renderItem)}
-            </div>
-          </div>
-        )}
-
-        {textItems.length > 0 && (
-          <div className="flex flex-col gap-3">
-            <div className="px-2">
-              <span className="text-[10px] font-bold uppercase tracking-[0.1em] text-text-soft">Text</span>
-            </div>
-            <div className="flex flex-col gap-2">
-              {textItems.map(renderItem)}
-            </div>
-          </div>
-        )}
+      )}
+      <div className="flex flex-col gap-2">
+        {renderGroup('Links', linkItems)}
+        {renderGroup('Text', textItems)}
       </div>
     </div>
   );
